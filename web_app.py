@@ -579,16 +579,53 @@ st.markdown("""
         margin: 1rem 0 !important;
     }
     
-    [data-testid='stExpander'] div:first-child {
-        background: #F9FAFB !important;
+    /* Expander header - white background instead of dark */
+    [data-testid='stExpander'] > div:first-child {
+        background: #FFFFFF !important;
         border-radius: 12px 12px 0 0 !important;
         padding: 1rem !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
     }
     
     [data-testid='stExpander'] summary {
         color: #1F2937 !important;
         font-weight: 600 !important;
+        background: transparent !important;
     }
+    
+    /* Override any dark background in expander header */
+    [data-testid='stExpander'] > div:first-child > div {
+        background: transparent !important;
+    }
+    
+    /* Expander header text */
+    [data-testid='stExpander'] summary,
+    [data-testid='stExpander'] > div:first-child * {
+        color: #1F2937 !important;
+    }
+    
+    /* Override Streamlit expander header dark background */
+    [data-testid='stExpander'] > div:first-child {
+        background-color: #FFFFFF !important;
+        background: #FFFFFF !important;
+    }
+    
+    /* Status badge styling - replace green with purple/blue for white theme */
+    /* Target status text in expander headers and content */
+    [data-testid='stExpander'] summary,
+    [data-testid='stExpander'] * {
+        /* Override any green color for RUNNING status */
+    }
+    
+    /* Status badges in markdown - replace green with theme color */
+    code {
+        background: #F3F4F6 !important;
+        color: #1F2937 !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    /* Status text styling - make RUNNING status use theme color instead of green */
+    /* This will target status text in expander titles and content */
     
     /* Footer */
     footer {
@@ -2251,15 +2288,24 @@ elif display_page == "📁 Strategy Management":
                     "stopped": "⏹️"
                 }.get(task.status, "❓")
                 
+                # 状态颜色映射 - 适配白色主题
+                status_colors = {
+                    "running": "#6366F1",  # 紫色，符合主题
+                    "completed": "#10B981",  # 绿色，表示成功
+                    "failed": "#EF4444",  # 红色，表示失败
+                    "stopped": "#6B7280"  # 灰色，表示停止
+                }
+                status_color = status_colors.get(task.status, "#1F2937")
+                
                 with st.expander(
-                    f"{status_icon} {task.task_name} | {task.status.upper()} | Duration: {task.get_duration():.1f}s",
+                    f"{status_icon} {task.task_name} | <span style='color: {status_color}'>{task.status.upper()}</span> | Duration: {task.get_duration():.1f}s",
                     expanded=(task.status == "running")
                 ):
                     # 紧凑布局 - 使用表格形式
                     info_col1, info_col2, info_col3 = st.columns([2.5, 2.5, 1])
                     
                     with info_col1:
-                        st.markdown(f"**Task ID:** `{task_id}`<br>**Status:** `{task.status.upper()}`", unsafe_allow_html=True)
+                        st.markdown(f"**Task ID:** `{task_id}`<br>**Status:** <span style='color: {status_color}; font-weight: 600; padding: 0.2rem 0.5rem; background: {status_color}15; border-radius: 4px;'>{task.status.upper()}</span>", unsafe_allow_html=True)
                     
                     with info_col2:
                         end_time_str = task.end_time.strftime('%Y-%m-%d %H:%M:%S') if task.end_time else "—"
