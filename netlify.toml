@@ -1,0 +1,28 @@
+# Netlify Configuration
+# Note: This is a Streamlit application, which runs as a Python backend service.
+# Netlify is primarily for static sites, but this config provides a redirect to Railway deployment.
+
+[build]
+  publish = "public"
+  command = "echo 'Building static redirect page...'"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Redirect all requests to Railway deployment
+[[redirects]]
+  from = "/*"
+  to = "https://your-app-name.railway.app"
+  status = 200
+  force = false
+  headers = {X-From = "Netlify"}
+
+# Alternative: If you want to deploy a static frontend that connects to Railway backend
+# Uncomment the section below and create a public/index.html file
+
+# [[redirects]]
+#   from = "/api/*"
+#   to = "https://your-app-name.railway.app/api/:splat"
+#   status = 200
+#   force = true
+

@@ -24,14 +24,15 @@ COPY . .
 # 创建日志目录
 RUN mkdir -p logs .pids
 
-# 暴露端口
-EXPOSE 8501 8502 8503
+# 暴露端口（Railway 会动态分配端口，这里暴露默认端口）
+# Railway 使用 $PORT 环境变量，但 EXPOSE 需要在构建时指定具体端口
+EXPOSE 8501
 
 # 启动脚本
 COPY docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
 
-# 健康检查
+# 健康检查（docker-entrypoint.sh 会处理端口）
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8501/_stcore/health || exit 1
 

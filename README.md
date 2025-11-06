@@ -136,6 +136,26 @@ docker-compose logs -f
 docker-compose down
 ```
 
+## ☁️ 云部署
+
+### Railway + Netlify 部署
+
+本项目已配置支持 Railway 和 Netlify 部署：
+
+- **Railway**: 部署 Streamlit 后端应用（主要服务）
+- **Netlify**: 部署静态前端页面，重定向到 Railway
+
+**快速开始**:
+- 查看 [QUICK_DEPLOY.md](./QUICK_DEPLOY.md) 获取快速部署指南
+- 查看 [DEPLOYMENT.md](./DEPLOYMENT.md) 获取详细部署说明
+
+**部署前检查**:
+```bash
+./deploy.sh
+```
+
+这会检查所有必要的部署配置文件是否就绪。
+
 ## 📝 License
 
 MIT License

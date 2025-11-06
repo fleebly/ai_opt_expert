@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>量化交易策略管理平台 - 正在跳转...</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 600px;
+        }
+        
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin: 2rem auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .link {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .info {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">📊</div>
+        <h1>量化交易策略管理平台</h1>
+        <p class="subtitle">QTSP - Quantitative Trading Strategy Platform</p>
+        
+        <div class="loading"></div>
+        
+        <p>正在跳转到应用服务器...</p>
+        
+        <a href="https://your-app-name.railway.app" class="link" id="directLink">
+            直接访问应用
+        </a>
+        
+        <div class="info">
+            <p><strong>部署说明：</strong></p>
+            <p>本应用部署在 Railway 平台</p>
+            <p>如果自动跳转失败，请点击上方链接</p>
+        </div>
+    </div>
+    
+    <script>
+        // 自动跳转到 Railway 部署
+        const railwayUrl = 'https://your-app-name.railway.app';
+        
+        // 更新链接
+        document.getElementById('directLink').href = railwayUrl;
+        
+        // 尝试自动跳转（延迟3秒给用户看到页面）
+        setTimeout(() => {
+            window.location.href = railwayUrl;
+        }, 3000);
+        
+        // 如果 Railway URL 未配置，显示提示
+        if (railwayUrl.includes('your-app-name')) {
+            document.querySelector('.subtitle').textContent = '⚠️ 请先在 netlify.toml 中配置 Railway URL';
+            document.querySelector('.loading').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+
