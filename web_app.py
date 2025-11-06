@@ -561,7 +561,7 @@ def run_scanner(symbols, start_date, end_date):
 st.sidebar.markdown("# 📊 Navigation Menu")
 page = st.sidebar.radio(
     "Select Function",
-    ["🏠 Home", "🚀 Strategy Optimization", "📁 Strategy Management"],
+    ["🏠 Home", "📈 Real-time Monitor", "🚀 Strategy Optimization", "📁 Strategy Management"],
     label_visibility="collapsed"
 )
 
@@ -661,6 +661,248 @@ if page == "🏠 Home":
     with col3:
         if st.button("📁 Manage Strategies", use_container_width=True):
             st.switch_page = "📁 Strategy Management"
+
+
+# ==================== Real-time Monitor ====================
+elif page == "📈 Real-time Monitor":
+    st.markdown('<h1 class="main-header">📈 Real-time Strategy Monitor</h1>', unsafe_allow_html=True)
+    
+    # Add custom CSS for the monitoring dashboard
+    st.markdown("""
+    <style>
+        .monitor-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1.5rem;
+            border-radius: 15px;
+            color: white;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .monitor-card-positive {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            padding: 1.5rem;
+            border-radius: 15px;
+            color: white;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .monitor-card-negative {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            padding: 1.5rem;
+            border-radius: 15px;
+            color: white;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .big-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+        .subtitle-text {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Configuration
+    monitor_start_date = "2025-04-01"
+    st.info(f"📅 Monitoring Period: **{monitor_start_date}** to **Today** | Auto-refresh every 30 seconds")
+    
+    # Auto-refresh toggle
+    col1, col2, col3 = st.columns([2, 2, 1])
+    with col1:
+        auto_refresh = st.checkbox("🔄 Auto-refresh", value=True)
+    with col2:
+        if st.button("🔄 Refresh Now", use_container_width=True):
+            st.rerun()
+    
+    st.markdown("---")
+    
+    # Load strategies and run backtests
+    strategies = load_strategies()
+    
+    if not strategies:
+        st.warning("⚠️ No strategies found. Please run optimization first.")
+    else:
+        # Group strategies by symbol and find best performing one
+        symbol_best_strategies = {}
+        
+        for strategy in strategies:
+            symbol = strategy['symbol']
+            
+            # Skip if already have a strategy for this symbol with better performance
+            if symbol in symbol_best_strategies:
+                existing_return = symbol_best_strategies[symbol].get('backtest_performance', {}).get('total_return', -999)
+                current_return = strategy.get('backtest_performance', {}).get('total_return', -999)
+                if current_return <= existing_return:
+                    continue
+            
+            symbol_best_strategies[symbol] = strategy
+        
+        st.markdown(f"### 🎯 Monitoring {len(symbol_best_strategies)} Symbols")
+        
+        # Run live backtests for each symbol
+        monitor_results = []
+        
+        with st.spinner('🔄 Loading real-time data...'):
+            for symbol, strategy in symbol_best_strategies.items():
+                try:
+                    # Load strategy config
+                    with open(strategy['path'], 'r', encoding='utf-8') as f:
+                        strategy_config = json.load(f)
+                    
+                    # Run backtest from 2025-04-01 to today
+                    backtest = OptionBacktest(initial_capital=10000, use_real_prices=True)
+                    
+                    params = strategy_config.get('params', {})
+                    signal_weights = strategy_config.get('signal_weights', {})
+                    
+                    result = backtest.run_backtest(
+                        symbol=symbol,
+                        start_date=monitor_start_date,
+                        end_date=datetime.now().strftime("%Y-%m-%d"),
+                        strategy='auto',
+                        entry_signal=signal_weights,
+                        profit_target=params.get('profit_target', 5.0),
+                        stop_loss=params.get('stop_loss', -0.5),
+                        max_holding_days=params.get('max_holding_days', 30),
+                        position_size=params.get('position_size', 0.1)
+                    )
+                    
+                    # Calculate metrics
+                    final_value = result.equity_curve[-1] if result.equity_curve else 10000
+                    total_return = (final_value - 10000) / 10000
+                    num_trades = len(result.trades)
+                    winning_trades = sum(1 for t in result.trades if t.pnl > 0)
+                    win_rate = (winning_trades / num_trades * 100) if num_trades > 0 else 0
+                    
+                    monitor_results.append({
+                        'symbol': symbol,
+                        'strategy_name': strategy['name'],
+                        'total_return': total_return,
+                        'final_value': final_value,
+                        'num_trades': num_trades,
+                        'win_rate': win_rate,
+                        'equity_curve': result.equity_curve,
+                        'trades': result.trades
+                    })
+                    
+                except Exception as e:
+                    st.error(f"❌ Error loading {symbol}: {str(e)}")
+                    continue
+        
+        # Sort by return (best first)
+        monitor_results.sort(key=lambda x: x['total_return'], reverse=True)
+        
+        # Display summary metrics
+        col1, col2, col3, col4 = st.columns(4)
+        
+        total_symbols = len(monitor_results)
+        avg_return = sum(r['total_return'] for r in monitor_results) / total_symbols if total_symbols > 0 else 0
+        positive_symbols = sum(1 for r in monitor_results if r['total_return'] > 0)
+        total_trades = sum(r['num_trades'] for r in monitor_results)
+        
+        with col1:
+            st.metric("🎯 Total Symbols", total_symbols)
+        with col2:
+            st.metric("📈 Avg Return", f"{avg_return:+.2%}")
+        with col3:
+            st.metric("✅ Positive", f"{positive_symbols}/{total_symbols}")
+        with col4:
+            st.metric("📊 Total Trades", total_trades)
+        
+        st.markdown("---")
+        
+        # Display individual strategy cards
+        st.markdown("### 📈 Live Strategy Performance")
+        
+        for idx, result in enumerate(monitor_results):
+            card_class = "monitor-card-positive" if result['total_return'] > 0 else "monitor-card-negative"
+            
+            col1, col2 = st.columns([2, 3])
+            
+            with col1:
+                st.markdown(f"""
+                <div class="{card_class}">
+                    <h2 style="margin:0;">📊 {result['symbol']}</h2>
+                    <p class="subtitle-text">{result['strategy_name']}</p>
+                    <div class="big-number">{result['total_return']:+.2%}</div>
+                    <p style="font-size: 1.1rem; margin: 0.5rem 0;">
+                        💰 ${result['final_value']:,.0f} | 
+                        📊 {result['num_trades']} trades | 
+                        🎯 {result['win_rate']:.1f}% win rate
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                if result['equity_curve']:
+                    # Create equity curve chart
+                    fig, ax = plt.subplots(figsize=(10, 4))
+                    
+                    equity_series = pd.Series(result['equity_curve'])
+                    equity_series.index = pd.to_datetime(equity_series.index)
+                    
+                    ax.plot(equity_series.index, equity_series.values, 
+                           linewidth=2.5, color='#2E86AB' if result['total_return'] > 0 else '#E63946')
+                    ax.axhline(y=10000, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+                    ax.fill_between(equity_series.index, 10000, equity_series.values, 
+                                   alpha=0.3, color='#2E86AB' if result['total_return'] > 0 else '#E63946')
+                    
+                    ax.set_title(f'{result["symbol"]} Equity Curve', fontsize=12, fontweight='bold')
+                    ax.set_xlabel('Date', fontsize=10)
+                    ax.set_ylabel('Portfolio Value ($)', fontsize=10)
+                    ax.grid(True, alpha=0.3)
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+                    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+                    plt.tight_layout()
+                    
+                    st.pyplot(fig)
+                    plt.close(fig)
+            
+            # Expandable trade details
+            with st.expander(f"📝 View {result['num_trades']} Trades for {result['symbol']}"):
+                if result['trades']:
+                    trades_data = []
+                    for i, trade in enumerate(result['trades'], 1):
+                        trades_data.append({
+                            '#': i,
+                            'Entry': trade.entry_date,
+                            'Exit': trade.exit_date,
+                            'Type': trade.position_type,
+                            'Entry Price': f"${trade.entry_price:.2f}",
+                            'Exit Price': f"${trade.exit_price:.2f}",
+                            'P&L': f"${trade.pnl:+,.2f}",
+                            'Return': f"{trade.pnl_pct:+.2%}",
+                            'Reason': trade.exit_reason
+                        })
+                    
+                    trades_df = pd.DataFrame(trades_data)
+                    st.dataframe(trades_df, use_container_width=True, hide_index=True)
+                else:
+                    st.info("No trades executed in this period")
+        
+        # Performance comparison table
+        st.markdown("---")
+        st.markdown("### 📊 Performance Comparison")
+        
+        comparison_df = pd.DataFrame([{
+            'Symbol': r['symbol'],
+            'Strategy': r['strategy_name'],
+            'Return': f"{r['total_return']:+.2%}",
+            'Final Value': f"${r['final_value']:,.0f}",
+            'Trades': r['num_trades'],
+            'Win Rate': f"{r['win_rate']:.1f}%"
+        } for r in monitor_results])
+        
+        st.dataframe(comparison_df, use_container_width=True, hide_index=True)
+    
+    # Auto-refresh logic
+    if auto_refresh:
+        time.sleep(30)
+        st.rerun()
 
 
 # ==================== 策略优化 ====================
