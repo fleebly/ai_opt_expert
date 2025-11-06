@@ -583,25 +583,6 @@ if display_page == "🏠 Home":
         st.dataframe(df, use_container_width=True, hide_index=True)
     else:
         st.info("No strategy files found, please run strategy optimization or manually add strategies.")
-    
-    # 快速操作
-    st.markdown("### ⚡ Quick Actions")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        if st.button("🚀 Start Optimization", use_container_width=True):
-            st.query_params["page"] = "optimization"
-            st.rerun()
-    
-    with col2:
-        if st.button("🔍 Start Scanning", use_container_width=True):
-            st.query_params["page"] = "monitor"
-            st.rerun()
-    
-    with col3:
-        if st.button("📁 Manage Strategies", use_container_width=True):
-            st.query_params["page"] = "management"
-            st.rerun()
 
 
 # ==================== Real-time Monitor ====================
