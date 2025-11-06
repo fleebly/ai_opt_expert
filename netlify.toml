@@ -8,21 +8,20 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  PYTHON_VERSION = "3.11"
 
 # Redirect all requests to Railway deployment
 [[redirects]]
   from = "/*"
-  to = "https://your-app-name.railway.app"
+  to = "https://api.ai-opt-expert.com/:splat"
   status = 200
-  force = false
+  force = true
   headers = {X-From = "Netlify"}
 
-# Alternative: If you want to deploy a static frontend that connects to Railway backend
-# Uncomment the section below and create a public/index.html file
-
+# Alternative: API-specific redirects (if needed)
 # [[redirects]]
 #   from = "/api/*"
-#   to = "https://your-app-name.railway.app/api/:splat"
+#   to = "https://api.ai-opt-expert.com/api/:splat"
 #   status = 200
 #   force = true
 
