@@ -63,9 +63,19 @@ st.markdown("""
         backdrop-filter: blur(10px);
     }
     
-    /* Add padding to body to account for fixed nav */
+    /* Add padding to body to account for fixed nav (no Streamlit header) */
     .main .block-container {
-        padding-top: 5rem !important;
+        padding-top: 6rem !important;
+    }
+    
+    /* Adjust top padding since Streamlit header is hidden */
+    #MainMenu {
+        visibility: hidden;
+    }
+    
+    /* Hide Streamlit footer */
+    footer[data-testid='stFooter'] {
+        display: none !important;
     }
     
     .nav-title {
@@ -166,6 +176,31 @@ st.markdown("""
         border-radius: 8px;
         margin: 1rem 0;
         color: #dc3545;
+    }
+    
+    /* Hide Streamlit default header and deploy button */
+    header[data-testid='stHeader'] {
+        display: none !important;
+    }
+    
+    /* Hide deploy button */
+    .stDeployButton {
+        display: none !important;
+    }
+    
+    /* Hide Streamlit menu button */
+    button[data-testid='baseButton-header'] {
+        display: none !important;
+    }
+    
+    /* Hide Streamlit toolbar */
+    [data-testid='stToolbar'] {
+        display: none !important;
+    }
+    
+    /* Hide Streamlit header actions */
+    [data-testid='stHeader'] > div {
+        display: none !important;
     }
     
     /* Sidebar styling - hidden since we moved navigation to top */
