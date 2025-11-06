@@ -437,6 +437,7 @@ def generate_interactive_report(symbol, strategy_file, start_date, end_date, ini
         st.error(f"生成报告失败: {e}\n\n{error_detail}")
         return None, None, None, None
 
+@st.cache_data(ttl=60)  # Cache for 60 seconds
 def load_strategies():
     """加载所有策略文件"""
     strategies_dir = Path("strategies")
@@ -461,7 +462,8 @@ def load_strategies():
                 'path': str(file)
             })
         except Exception as e:
-            st.error(f"Error loading {file.name}: {e}")
+            # Skip files with errors instead of showing error on every page load
+            continue
     
     return sorted(strategies, key=lambda x: x['modified'], reverse=True)
 

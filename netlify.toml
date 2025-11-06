@@ -13,10 +13,9 @@
 # Redirect all requests to Railway deployment
 [[redirects]]
   from = "/*"
-  to = "https://api.ai-opt-expert.com/:splat"
-  status = 200
-  force = true
-  headers = {X-From = "Netlify"}
+  to = "https://ai-opt-expert-production.up.railway.app/:splat"
+  status = 301
+  force = false
 
 # Alternative: API-specific redirects (if needed)
 # [[redirects]]
