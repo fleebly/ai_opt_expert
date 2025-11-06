@@ -1,1 +1,18 @@
+# Web Framework
+streamlit>=1.28.0
 
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Visualization
+matplotlib>=3.7.0
+
+# HTTP Requests
+requests>=2.31.0
+
+# Environment Variables
+python-dotenv>=1.0.0
+
+# Optional: For better performance
+scipy>=1.10.0
