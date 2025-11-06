@@ -32,7 +32,7 @@ logs/
 *.sqlite
 *.sqlite3
 report_assets/
-signal_optimization/
+# signal_optimization/ - REMOVED: This is needed for the app to run
 .pids/
 public/
 .netlify/
