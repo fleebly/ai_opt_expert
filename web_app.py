@@ -484,15 +484,20 @@ def render_top_navigation():
     </div>
     <script>
     function navigateTo(page) {{
-        // Update URL without page reload
-        const url = new URL(window.location);
-        url.searchParams.set('page', page);
-        window.history.pushState({{page: page}}, '', url);
+        // Prevent default link behavior
+        event.preventDefault();
         
-        // Trigger Streamlit rerun by updating query params
-        // This will be handled by Streamlit's query params system
-        window.location.search = '?page=' + page;
+        // Update URL and trigger Streamlit rerun
+        // Streamlit will detect the query param change and rerun
+        const newUrl = window.location.pathname + '?page=' + page;
+        window.location.href = newUrl;
     }}
+    
+    // Also handle browser back/forward buttons
+    window.addEventListener('popstate', function(event) {{
+        // Streamlit will automatically handle query param changes
+        window.location.reload();
+    }});
     </script>
     """
     
@@ -1173,8 +1178,8 @@ elif display_page == "🚀 Strategy Optimization":
                         )
 
 
-# ==================== 策略扫描 ====================
-elif page == "📁 Strategy Management":
+# ==================== Strategy Management ====================
+elif display_page == "📁 Strategy Management":
     st.markdown('<h1 class="main-header">📁 Strategy Management</h1>', unsafe_allow_html=True)
     
     st.markdown("""
