@@ -1,0 +1,746 @@
+
+        <!DOCTYPE html>
+<html lang="en">
+        <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>策略扫描报告 - Multi-Symbol Analysis</title>
+            <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2E86AB 0%, #A23B72 100%);
+            color: white;
+            padding: 50px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header .subtitle {
+            font-size: 1.3em;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+        
+        .content {
+            padding: 50px;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+        }
+        
+        .summary-card.highlight {
+            background: linear-gradient(135deg, #F093FB 0%, #F5576C 100%);
+            color: white;
+        }
+        
+        .card-label {
+            font-size: 1em;
+            opacity: 0.85;
+            margin-bottom: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .card-value {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+        
+        .section {
+            margin: 50px 0;
+        }
+        
+        .section h2 {
+            color: #2E86AB;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 4px solid #2E86AB;
+            font-size: 1.8em;
+        }
+        
+        .chart-container {
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .chart-container img {
+            width: 100%;
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease;
+        }
+        
+        .chart-container img:hover {
+            transform: scale(1.01);
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .data-table thead tr {
+            background: linear-gradient(135deg, #2E86AB 0%, #A23B72 100%);
+            color: white;
+        }
+        
+        .data-table th {
+            padding: 18px 15px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.95em;
+            letter-spacing: 0.5px;
+        }
+        
+        .data-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.95em;
+        }
+        
+        .data-table tbody tr:hover {
+            background-color: #f9fafb;
+        }
+        
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .positive {
+            color: #10b981;
+            font-weight: bold;
+        }
+        
+        .negative {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        
+        .footer {
+            background: #f9fafb;
+            padding: 30px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.95em;
+            border-top: 3px solid #e5e7eb;
+        }
+        
+        .best-symbol {
+            display: inline-block;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+            </style>
+        </head>
+        <body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 策略扫描报告</h1>
+            <div class="subtitle">Multi-Symbol Strategy Performance Analysis | 2025-11-06 13:53:09</div>
+        </div>
+        
+        <div class="content">
+            <h2 style="color: #2E86AB; margin-bottom: 35px; font-size: 2em;">📈 Summary Statistics</h2>
+            
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="card-label">Total Symbols Tested</div>
+                    <div class="card-value">2</div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="card-label">Total Strategies</div>
+                    <div class="card-value">2</div>
+                </div>
+                
+                <div class="summary-card highlight">
+                    <div class="card-label">Best Return</div>
+                    <div class="card-value">+553.1%</div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="card-label">Average Return</div>
+                    <div class="card-value">+390.0%</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0; padding: 25px; background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                <h3 style="font-size: 1.5em; margin-bottom: 10px;">🏆 Best Performance</h3>
+                <p style="font-size: 1.2em;">
+                    <span class="best-symbol">NVDA</span> with strategy 
+                    <span style="font-weight: bold; color: #2d3436;">CCI_RSI_Volatility_Momentum</span> 
+                    achieved <span style="font-weight: bold; color: #10b981; font-size: 1.3em;">+553.13%</span>
+                </p>
+            </div>
+            
+            <div class="section">
+                <h2>📈 Equity Curves</h2>
+                <div class="chart-container"><img src="scan_equity_NVDA_20251106_135308.png" alt="Equity Curve"><p style="text-align:center; font-weight:bold; margin-top:10px;">NVDA</p></div><div class="chart-container"><img src="scan_equity_BABA_20251106_135308.png" alt="Equity Curve"><p style="text-align:center; font-weight:bold; margin-top:10px;">BABA</p></div>
+            </div>
+            
+            <div class="section">
+                <h2>📊 Performance Comparison Charts</h2>
+                <div class="chart-container">
+                    <img src="scan_comparison_20251106_135308.png" alt="Performance Comparison">
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>📈 Strategy Details Analysis</h2>
+                <div class="chart-container">
+                    <img src="scan_details_20251106_135308.png" alt="Strategy Details">
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>🏆 Best Strategies by Symbol</h2>
+                <p style="margin-bottom: 15px; color: #6b7280; font-size: 1.05em;">
+                    以下显示每个标的表现最佳的策略配置
+                </p>
+                <table border="1" class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>symbol</th>
+      <th>strategy_name</th>
+      <th>total_return</th>
+      <th>win_rate</th>
+      <th>sharpe_ratio</th>
+      <th>max_drawdown</th>
+      <th>num_trades</th>
+      <th>avg_win</th>
+      <th>avg_loss</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>BABA</td>
+      <td>CCI_RSI_Volatility_Momentum</td>
+      <td><span class="positive">+226.81%</span></td>
+      <td>33.3%</td>
+      <td>1.69</td>
+      <td><span class="negative">-40.56%</span></td>
+      <td>9</td>
+      <td>$9915.10</td>
+      <td>$-1177.45</td>
+    </tr>
+    <tr>
+      <td>NVDA</td>
+      <td>CCI_RSI_Volatility_Momentum</td>
+      <td><span class="positive">+553.13%</span></td>
+      <td>36.4%</td>
+      <td>1.89</td>
+      <td><span class="negative">-25.98%</span></td>
+      <td>11</td>
+      <td>$22028.77</td>
+      <td>$-4686.03</td>
+    </tr>
+  </tbody>
+</table>
+            </div>
+            
+            <div class="section">
+                <h2>📋 All Scan Results</h2>
+                <p style="margin-bottom: 15px; color: #6b7280; font-size: 1.05em;">
+                    完整的扫描结果，包含所有标的和策略组合
+                </p>
+                <table border="1" class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>symbol</th>
+      <th>strategy_name</th>
+      <th>total_return</th>
+      <th>win_rate</th>
+      <th>sharpe_ratio</th>
+      <th>max_drawdown</th>
+      <th>num_trades</th>
+      <th>avg_win</th>
+      <th>avg_loss</th>
+      <th>combo_label</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>BABA</td>
+      <td>CCI_RSI_Volatility_Momentum</td>
+      <td><span class="positive">+226.81%</span></td>
+      <td>33.3%</td>
+      <td>1.69</td>
+      <td><span class="negative">-40.56%</span></td>
+      <td>9</td>
+      <td>$9915.10</td>
+      <td>$-1177.45</td>
+      <td>BABA\nCCI_RSI_Volatility_Momentum</td>
+    </tr>
+    <tr>
+      <td>NVDA</td>
+      <td>CCI_RSI_Volatility_Momentum</td>
+      <td><span class="positive">+553.13%</span></td>
+      <td>36.4%</td>
+      <td>1.89</td>
+      <td><span class="negative">-25.98%</span></td>
+      <td>11</td>
+      <td>$22028.77</td>
+      <td>$-4686.03</td>
+      <td>NVDA\nCCI_RSI_Volatility_Momentum</td>
+    </tr>
+  </tbody>
+</table>
+            </div>
+            
+            
+                <div class="section">
+                    <h2>📝 Trade Details - NVDA (CCI_RSI_Volatility_Momentum)</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Entry Date</th>
+                                <th>Exit Date</th>
+                                <th>Days</th>
+                                <th>Strategy</th>
+                                <th>Strike</th>
+                                <th>Shares</th>
+                                <th>Entry Price</th>
+                                <th>Exit Price</th>
+                                <th>Stock Entry</th>
+                                <th>Stock Exit</th>
+                                <th>Stock Change</th>
+                                <th>P&L</th>
+                                <th>Return</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                
+                        <tr>
+                            <td>1</td>
+                            <td>2025-03-28</td>
+                            <td>2025-04-04</td>
+                            <td>7</td>
+                            <td>LONG_PUT</td>
+                            <td>$100.00</td>
+                            <td>9</td>
+                            <td>$1.06</td>
+                            <td>$6.46</td>
+                            <td>$109.67</td>
+                            <td>$94.31</td>
+                            <td><span class="negative">-14.01%</span></td>
+                            <td><span class="positive">$+4,858.83</span></td>
+                            <td><span class="positive">+510.0%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>2</td>
+                            <td>2025-04-04</td>
+                            <td>2025-04-09</td>
+                            <td>5</td>
+                            <td>LONG_CALL</td>
+                            <td>$100.00</td>
+                            <td>14</td>
+                            <td>$1.05</td>
+                            <td>$15.06</td>
+                            <td>$94.31</td>
+                            <td>$114.33</td>
+                            <td><span class="positive">+21.23%</span></td>
+                            <td><span class="positive">$+19,623.60</span></td>
+                            <td><span class="positive">+1339.7%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>3</td>
+                            <td>2025-05-01</td>
+                            <td>2025-05-13</td>
+                            <td>12</td>
+                            <td>LONG_CALL</td>
+                            <td>$120.00</td>
+                            <td>29</td>
+                            <td>$1.15</td>
+                            <td>$10.68</td>
+                            <td>$111.61</td>
+                            <td>$129.93</td>
+                            <td><span class="positive">+16.41%</span></td>
+                            <td><span class="positive">$+27,648.66</span></td>
+                            <td><span class="positive">+829.3%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>4</td>
+                            <td>2025-05-13</td>
+                            <td>2025-06-02</td>
+                            <td>20</td>
+                            <td>LONG_CALL</td>
+                            <td>$140.00</td>
+                            <td>46</td>
+                            <td>$1.32</td>
+                            <td>$0.56</td>
+                            <td>$129.93</td>
+                            <td>$137.38</td>
+                            <td><span class="positive">+5.73%</span></td>
+                            <td><span class="negative">$-3,499.90</span></td>
+                            <td><span class="negative">-57.5%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>5</td>
+                            <td>2025-06-04</td>
+                            <td>2025-06-23</td>
+                            <td>19</td>
+                            <td>LONG_CALL</td>
+                            <td>$150.00</td>
+                            <td>36</td>
+                            <td>$1.60</td>
+                            <td>$0.59</td>
+                            <td>$141.92</td>
+                            <td>$144.17</td>
+                            <td><span class="positive">+1.59%</span></td>
+                            <td><span class="negative">$-3,645.11</span></td>
+                            <td><span class="negative">-63.2%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>6</td>
+                            <td>2025-06-24</td>
+                            <td>2025-07-15</td>
+                            <td>21</td>
+                            <td>LONG_CALL</td>
+                            <td>$160.00</td>
+                            <td>37</td>
+                            <td>$1.47</td>
+                            <td>$11.20</td>
+                            <td>$147.90</td>
+                            <td>$170.70</td>
+                            <td><span class="positive">+15.42%</span></td>
+                            <td><span class="positive">$+35,983.97</span></td>
+                            <td><span class="positive">+659.9%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>7</td>
+                            <td>2025-07-16</td>
+                            <td>2025-07-21</td>
+                            <td>5</td>
+                            <td>LONG_CALL</td>
+                            <td>$180.00</td>
+                            <td>25</td>
+                            <td>$3.50</td>
+                            <td>$1.60</td>
+                            <td>$171.37</td>
+                            <td>$171.38</td>
+                            <td><span class="positive">+0.01%</span></td>
+                            <td><span class="negative">$-4,751.83</span></td>
+                            <td><span class="negative">-54.3%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>8</td>
+                            <td>2025-07-21</td>
+                            <td>2025-08-15</td>
+                            <td>25</td>
+                            <td>LONG_CALL</td>
+                            <td>$180.00</td>
+                            <td>43</td>
+                            <td>$2.00</td>
+                            <td>$0.81</td>
+                            <td>$171.38</td>
+                            <td>$180.45</td>
+                            <td><span class="positive">+5.29%</span></td>
+                            <td><span class="negative">$-5,128.43</span></td>
+                            <td><span class="negative">-59.7%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>9</td>
+                            <td>2025-09-02</td>
+                            <td>2025-09-17</td>
+                            <td>15</td>
+                            <td>LONG_CALL</td>
+                            <td>$180.00</td>
+                            <td>41</td>
+                            <td>$1.96</td>
+                            <td>$0.90</td>
+                            <td>$170.78</td>
+                            <td>$170.29</td>
+                            <td><span class="negative">-0.29%</span></td>
+                            <td><span class="negative">$-4,343.29</span></td>
+                            <td><span class="negative">-54.2%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>10</td>
+                            <td>2025-10-02</td>
+                            <td>2025-10-14</td>
+                            <td>12</td>
+                            <td>LONG_CALL</td>
+                            <td>$200.00</td>
+                            <td>36</td>
+                            <td>$2.11</td>
+                            <td>$0.88</td>
+                            <td>$188.89</td>
+                            <td>$180.03</td>
+                            <td><span class="negative">-4.69%</span></td>
+                            <td><span class="negative">$-4,437.52</span></td>
+                            <td><span class="negative">-58.4%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>11</td>
+                            <td>2025-10-28</td>
+                            <td>2025-11-05</td>
+                            <td>8</td>
+                            <td>LONG_CALL</td>
+                            <td>$210.00</td>
+                            <td>29</td>
+                            <td>$2.41</td>
+                            <td>$0.00</td>
+                            <td>$201.03</td>
+                            <td>$195.21</td>
+                            <td><span class="negative">-2.90%</span></td>
+                            <td><span class="negative">$-6,996.14</span></td>
+                            <td><span class="negative">-100.0%</span></td>
+                        </tr>
+                    
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="section">
+                    <h2>📝 Trade Details - BABA (CCI_RSI_Volatility_Momentum)</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Entry Date</th>
+                                <th>Exit Date</th>
+                                <th>Days</th>
+                                <th>Strategy</th>
+                                <th>Strike</th>
+                                <th>Shares</th>
+                                <th>Entry Price</th>
+                                <th>Exit Price</th>
+                                <th>Stock Entry</th>
+                                <th>Stock Exit</th>
+                                <th>Stock Change</th>
+                                <th>P&L</th>
+                                <th>Return</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                
+                        <tr>
+                            <td>1</td>
+                            <td>2025-03-31</td>
+                            <td>2025-04-04</td>
+                            <td>4</td>
+                            <td>LONG_PUT</td>
+                            <td>$130.00</td>
+                            <td>5</td>
+                            <td>$1.82</td>
+                            <td>$14.28</td>
+                            <td>$132.23</td>
+                            <td>$116.54</td>
+                            <td><span class="negative">-11.87%</span></td>
+                            <td><span class="positive">$+6,227.31</span></td>
+                            <td><span class="positive">+683.2%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>2</td>
+                            <td>2025-04-04</td>
+                            <td>2025-04-07</td>
+                            <td>3</td>
+                            <td>LONG_CALL</td>
+                            <td>$130.00</td>
+                            <td>16</td>
+                            <td>$0.98</td>
+                            <td>$0.44</td>
+                            <td>$116.54</td>
+                            <td>$105.98</td>
+                            <td><span class="negative">-9.06%</span></td>
+                            <td><span class="negative">$-860.17</span></td>
+                            <td><span class="negative">-54.8%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>3</td>
+                            <td>2025-04-07</td>
+                            <td>2025-04-23</td>
+                            <td>16</td>
+                            <td>LONG_CALL</td>
+                            <td>$110.00</td>
+                            <td>11</td>
+                            <td>$1.32</td>
+                            <td>$9.50</td>
+                            <td>$105.98</td>
+                            <td>$118.97</td>
+                            <td><span class="positive">+12.26%</span></td>
+                            <td><span class="positive">$+9,003.90</span></td>
+                            <td><span class="positive">+622.4%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>4</td>
+                            <td>2025-05-02</td>
+                            <td>2025-05-16</td>
+                            <td>14</td>
+                            <td>LONG_CALL</td>
+                            <td>$130.00</td>
+                            <td>15</td>
+                            <td>$1.59</td>
+                            <td>$0.71</td>
+                            <td>$125.76</td>
+                            <td>$123.46</td>
+                            <td><span class="negative">-1.83%</span></td>
+                            <td><span class="negative">$-1,324.90</span></td>
+                            <td><span class="negative">-55.4%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>5</td>
+                            <td>2025-05-27</td>
+                            <td>2025-06-10</td>
+                            <td>14</td>
+                            <td>LONG_PUT</td>
+                            <td>$110.00</td>
+                            <td>19</td>
+                            <td>$1.20</td>
+                            <td>$0.56</td>
+                            <td>$119.52</td>
+                            <td>$121.88</td>
+                            <td><span class="positive">+1.97%</span></td>
+                            <td><span class="negative">$-1,220.49</span></td>
+                            <td><span class="negative">-53.4%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>6</td>
+                            <td>2025-06-13</td>
+                            <td>2025-06-30</td>
+                            <td>17</td>
+                            <td>LONG_PUT</td>
+                            <td>$100.00</td>
+                            <td>22</td>
+                            <td>$0.96</td>
+                            <td>$0.38</td>
+                            <td>$112.87</td>
+                            <td>$113.41</td>
+                            <td><span class="positive">+0.48%</span></td>
+                            <td><span class="negative">$-1,277.33</span></td>
+                            <td><span class="negative">-60.6%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>7</td>
+                            <td>2025-07-02</td>
+                            <td>2025-07-21</td>
+                            <td>19</td>
+                            <td>LONG_PUT</td>
+                            <td>$100.00</td>
+                            <td>32</td>
+                            <td>$0.63</td>
+                            <td>$0.26</td>
+                            <td>$110.71</td>
+                            <td>$120.27</td>
+                            <td><span class="positive">+8.64%</span></td>
+                            <td><span class="negative">$-1,187.48</span></td>
+                            <td><span class="negative">-58.9%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>8</td>
+                            <td>2025-08-13</td>
+                            <td>2025-08-14</td>
+                            <td>1</td>
+                            <td>LONG_CALL</td>
+                            <td>$140.00</td>
+                            <td>6</td>
+                            <td>$2.82</td>
+                            <td>$0.83</td>
+                            <td>$126.86</td>
+                            <td>$122.28</td>
+                            <td><span class="negative">-3.61%</span></td>
+                            <td><span class="negative">$-1,194.31</span></td>
+                            <td><span class="negative">-70.6%</span></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>9</td>
+                            <td>2025-08-29</td>
+                            <td>2025-09-11</td>
+                            <td>13</td>
+                            <td>LONG_CALL</td>
+                            <td>$140.00</td>
+                            <td>10</td>
+                            <td>$1.68</td>
+                            <td>$16.20</td>
+                            <td>$135.00</td>
+                            <td>$155.44</td>
+                            <td><span class="positive">+15.14%</span></td>
+                            <td><span class="positive">$+14,514.09</span></td>
+                            <td><span class="positive">+862.6%</span></td>
+                        </tr>
+                    
+                        </tbody>
+                    </table>
+                </div>
+                
+        </div>
+        
+        <div class="footer">
+            <strong>Generated on 2025-11-06 13:53:09</strong><br>
+            Strategy Scanner Report | Total Symbols: 2 | Total Strategies: 2
+        </div>
+    </div>
+        </body>
+        </html>

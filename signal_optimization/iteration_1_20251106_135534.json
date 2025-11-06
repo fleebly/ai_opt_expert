@@ -1,0 +1,89 @@
+{
+  "iteration": 1,
+  "timestamp": "20251106_135534",
+  "best_return": 46.04480562571263,
+  "history": [
+    {
+      "iteration": 1,
+      "best_return": 46.04480562571263,
+      "strategies": null,
+      "results": [
+        {
+          "strategy_name": "CCI_Williams_Hybrid",
+          "signal_weights": {
+            "cci_extreme": 0.4,
+            "williams_oversold": 0.3,
+            "low_volatility": 0.3
+          },
+          "total_return": 46.04480562571263,
+          "sharpe_ratio": 1.911086207937491,
+          "win_rate": 0.3125,
+          "num_trades": 16,
+          "max_drawdown": -0.3815476452992414,
+          "avg_win": 110422.81272728284,
+          "avg_loss": -8333.27339811709
+        },
+        {
+          "strategy_name": "RSI_MACD_Divergence",
+          "signal_weights": {
+            "rsi_oversold": 0.4,
+            "macd_divergence": 0.3,
+            "low_volatility": 0.3
+          },
+          "total_return": 24.45091078228037,
+          "sharpe_ratio": 0.7491826962150093,
+          "win_rate": 0.25,
+          "num_trades": 4,
+          "max_drawdown": -0.4681907019101137,
+          "avg_win": 364055.10819396644,
+          "avg_loss": -39848.666790387586
+        },
+        {
+          "strategy_name": "BB_Volume_Hybrid",
+          "signal_weights": {
+            "bb_breakout": 0.4,
+            "volume_surge": 0.3,
+            "macd_crossover": 0.3
+          },
+          "total_return": 14.583895006388417,
+          "sharpe_ratio": 0.7041480297646519,
+          "win_rate": 0.2,
+          "num_trades": 5,
+          "max_drawdown": -0.24038687239146336,
+          "avg_win": 286271.95425072184,
+          "avg_loss": -35108.25104670942
+        },
+        {
+          "strategy_name": "MACD_RSI_BB",
+          "signal_weights": {
+            "macd_crossover": 0.3,
+            "rsi_oversold": 0.3,
+            "bb_compression": 0.4
+          },
+          "total_return": 5.279668374662328,
+          "sharpe_ratio": 1.8590498900133745,
+          "win_rate": 0.4166666666666667,
+          "num_trades": 12,
+          "max_drawdown": -0.27761598575502744,
+          "avg_win": 12124.853834378124,
+          "avg_loss": -1118.2264893239067
+        },
+        {
+          "strategy_name": "Volume_MA_Momentum",
+          "signal_weights": {
+            "volume_surge": 0.4,
+            "ma_crossover": 0.3,
+            "price_above_ma50": 0.3
+          },
+          "total_return": 1.2301167859967799,
+          "sharpe_ratio": 0.5823065603934504,
+          "win_rate": 0.16666666666666666,
+          "num_trades": 6,
+          "max_drawdown": -0.2399183873492963,
+          "avg_win": 33295.41913947244,
+          "avg_loss": -4198.8502559009285
+        }
+      ]
+    }
+  ]
+}

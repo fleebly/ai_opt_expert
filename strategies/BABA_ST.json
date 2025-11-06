@@ -1,0 +1,18 @@
+{
+    "name": "Enhanced_MACD_RSI_BB",
+    "signal_weights": {
+      "macd_crossover": 0.25,
+      "rsi_oversold": 0.2,
+      "bb_compression": 0.2,
+      "volume_surge": 0.15,
+      "cci_extreme": 0.1,
+      "momentum_reversal": 0.1
+    },    
+    
+    "params": {
+      "profit_target": 5.0,
+      "stop_loss": -0.5,
+      "max_holding_days": 30,
+      "position_size": 0.1
+    }
+  }

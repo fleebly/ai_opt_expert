@@ -1,0 +1,1733 @@
+#!/usr/bin/env python3
+"""
+量化交易策略管理 Web 应用
+
+基于 run_iterative_optimization.py 和 strategy_scanner.py 的核心功能
+提供可读、可写、可选、可看的完整界面
+
+运行方式:
+streamlit run web_app.py
+"""
+
+import streamlit as st
+import pandas as pd
+import json
+import os
+from pathlib import Path
+from datetime import datetime
+import time
+import subprocess
+import sys
+import threading
+import queue
+from io import StringIO
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from backtest_engine import OptionBacktest
+
+# 页面配置
+st.set_page_config(
+    page_title="量化交易策略管理平台",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# 自定义 CSS
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.5rem;
+        font-weight: bold;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 2rem;
+    }
+    .metric-card {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .success-box {
+        background-color: #d4edda;
+        border-left: 4px solid #28a745;
+        padding: 1rem;
+        border-radius: 5px;
+        margin: 1rem 0;
+    }
+    .warning-box {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 1rem;
+        border-radius: 5px;
+        margin: 1rem 0;
+    }
+    .error-box {
+        background-color: #f8d7da;
+        border-left: 4px solid #dc3545;
+        padding: 1rem;
+        border-radius: 5px;
+        margin: 1rem 0;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# 初始化 session state
+if 'tasks' not in st.session_state:
+    st.session_state.tasks = {}
+if 'task_counter' not in st.session_state:
+    st.session_state.task_counter = 0
+
+# 后台任务管理器
+class BackgroundTask:
+    """后台任务管理器"""
+    
+    def __init__(self, task_id, task_name, cmd):
+        self.task_id = task_id
+        self.task_name = task_name
+        self.cmd = cmd
+        self.status = "running"  # running, completed, failed
+        self.output_queue = queue.Queue()
+        self.process = None
+        self.thread = None
+        self.start_time = datetime.now()
+        self.end_time = None
+        self.logs = []
+        
+    def start(self):
+        """启动后台任务"""
+        # 添加初始日志
+        initial_log = f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Starting task: {self.task_name}"
+        self.logs.append(initial_log)
+        self.output_queue.put(initial_log)
+        
+        self.thread = threading.Thread(target=self._run_task, daemon=True)
+        self.thread.start()
+    
+    def _run_task(self):
+        """在后台线程中运行任务"""
+        try:
+            # 添加完整命令日志（用于调试）
+            cmd_str = ' '.join(self.cmd)
+            if len(cmd_str) > 200:
+                debug_log = f"[{datetime.now().strftime('%H:%M:%S')}] 📝 Command: {cmd_str[:200]}..."
+            else:
+                debug_log = f"[{datetime.now().strftime('%H:%M:%S')}] 📝 Command: {cmd_str}"
+            self.logs.append(debug_log)
+            self.output_queue.put(debug_log)
+            
+            # 设置环境变量强制无缓冲输出
+            env = os.environ.copy()
+            env['PYTHONUNBUFFERED'] = '1'
+            env['PYTHONIOENCODING'] = 'utf-8'
+            
+            self.process = subprocess.Popen(
+                self.cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,  # 分别捕获 stderr
+                text=True,
+                bufsize=0,  # 完全无缓冲
+                universal_newlines=True,
+                env=env  # 传递环境变量
+            )
+            
+            # 进程启动后的日志
+            started_log = f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Process started (PID: {self.process.pid})"
+            self.logs.append(started_log)
+            self.output_queue.put(started_log)
+            
+            # 使用线程同时读取 stdout 和 stderr，避免阻塞
+            def read_stream(stream, is_stderr=False):
+                """在单独线程中读取流"""
+                try:
+                    for line in iter(stream.readline, ''):
+                        if line:
+                            timestamp = datetime.now().strftime('%H:%M:%S')
+                            # 只对真正的错误添加 ERROR 前缀
+                            # 排除：包含 INFO/WARNING 的行，或者只是分隔符/空行
+                            stripped = line.strip()
+                            if is_stderr and stripped:
+                                # 检查是否是真正的错误（包含错误关键词）
+                                error_keywords = ['error', 'exception', 'traceback', 'failed', 'fatal']
+                                is_real_error = (
+                                    'INFO' not in line and 
+                                    'WARNING' not in line and 
+                                    not all(c in '=-_*#' for c in stripped) and  # 不是分隔符
+                                    any(keyword in line.lower() for keyword in error_keywords)  # 包含错误关键词
+                                )
+                                if is_real_error:
+                                    log_line = f"[{timestamp}] ❌ ERROR: {line.rstrip()}"
+                                else:
+                                    log_line = f"[{timestamp}] {line.rstrip()}"
+                            else:
+                                log_line = f"[{timestamp}] {line.rstrip()}"
+                            self.logs.append(log_line)
+                            self.output_queue.put(log_line)
+                except Exception as e:
+                    error_msg = f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Stream read error: {e}"
+                    self.logs.append(error_msg)
+                    self.output_queue.put(error_msg)
+            
+            # 创建两个线程分别读取 stdout 和 stderr
+            stdout_thread = threading.Thread(
+                target=read_stream, 
+                args=(self.process.stdout, False),
+                daemon=True
+            )
+            stderr_thread = threading.Thread(
+                target=read_stream, 
+                args=(self.process.stderr, True),
+                daemon=True
+            )
+            
+            stdout_thread.start()
+            stderr_thread.start()
+            
+            # 等待进程结束
+            self.process.wait()
+            
+            # 等待读取线程完成（最多等待2秒）
+            stdout_thread.join(timeout=2)
+            # stderr_thread.join(timeout=2)
+            
+            self.end_time = datetime.now()
+            
+            if self.process.returncode == 0:
+                self.status = "completed"
+                complete_log = f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Task completed successfully"
+                self.logs.append(complete_log)
+                self.output_queue.put(complete_log)
+            else:
+                self.status = "failed"
+                fail_log = f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Task failed (exit code: {self.process.returncode})"
+                self.logs.append(fail_log)
+                self.output_queue.put(fail_log)
+                
+                # 如果没有其他日志，添加提示
+                if len(self.logs) <= 4:  # 只有启动日志
+                    hint_log = f"[{datetime.now().strftime('%H:%M:%S')}] 💡 Hint: Process exited immediately. Check if the script has syntax errors or missing dependencies."
+                    self.logs.append(hint_log)
+                    self.output_queue.put(hint_log)
+                
+        except Exception as e:
+            self.status = "failed"
+            self.end_time = datetime.now()
+            error_msg = f"❌ 任务异常: {str(e)}"
+            self.logs.append(error_msg)
+            self.output_queue.put(error_msg)
+    
+    def get_logs(self):
+        """获取所有日志"""
+        # 从队列中读取新日志
+        while not self.output_queue.empty():
+            try:
+                line = self.output_queue.get_nowait()
+                if line not in self.logs:
+                    self.logs.append(line)
+            except queue.Empty:
+                break
+        return self.logs
+    
+    def get_duration(self):
+        """获取任务运行时长"""
+        if self.end_time:
+            duration = (self.end_time - self.start_time).total_seconds()
+        else:
+            duration = (datetime.now() - self.start_time).total_seconds()
+        return duration
+    
+    def is_running(self):
+        """检查任务是否正在运行"""
+        return self.status == "running" and self.process and self.process.poll() is None
+    
+    def stop(self):
+        """停止任务"""
+        if self.process and self.process.poll() is None:
+            self.process.terminate()
+            self.status = "stopped"
+            self.end_time = datetime.now()
+            self.output_queue.put("⚠️ 任务已手动停止")
+
+# 工具函数
+def generate_interactive_report(symbol, strategy_file, start_date, end_date, initial_capital=10000.0):
+    """
+    为单个标的生成交互式报告，包含equity curve和交易标注
+    
+    Args:
+        symbol: 标的代码
+        strategy_file: 策略JSON文件路径
+        start_date: 开始日期
+        end_date: 结束日期
+        initial_capital: 初始资金
+        
+    Returns:
+        tuple: (equity_df, trades_list, metrics_dict, fig)
+    """
+    try:
+        # 创建素材文件夹
+        assets_dir = Path("report_assets")
+        assets_dir.mkdir(exist_ok=True)
+        
+        # 加载策略
+        with open(strategy_file, 'r', encoding='utf-8') as f:
+            strategy_config = json.load(f)
+        
+        # 初始化回测引擎（正确的方式）
+        backtest = OptionBacktest(
+            initial_capital=initial_capital,
+            use_real_prices=True
+        )
+        
+        # 获取参数
+        params = strategy_config.get('params', {})
+        signal_weights = strategy_config['signal_weights']
+        
+        # 运行回测
+        result = backtest.run_backtest(
+            symbol=symbol,
+            start_date=start_date,
+            end_date=end_date,
+            strategy='auto',
+            entry_signal=signal_weights,
+            profit_target=params.get('profit_target', 5.0),
+            stop_loss=params.get('stop_loss', -0.5),
+            max_holding_days=params.get('max_holding_days', 30),
+            position_size=params.get('position_size', 0.1)
+        )
+        
+        # 获取equity curve和trades (result是BacktestResult对象)
+        equity_curve = pd.Series(result.equity_curve)
+        equity_curve.index = pd.to_datetime(equity_curve.index)
+        trades = result.trades
+        
+        # 绘制equity curve with trade markers
+        fig, ax = plt.subplots(figsize=(14, 7))
+        
+        # 绘制资金曲线
+        ax.plot(equity_curve.index, equity_curve.values,
+                linewidth=2.5, color='#2E86AB', label='Portfolio Value', zorder=1)
+        ax.axhline(y=initial_capital, color='gray',
+                   linestyle='--', alpha=0.6, linewidth=1.5, label='Initial Capital')
+        ax.fill_between(equity_curve.index, initial_capital,
+                         equity_curve.values, alpha=0.2, color='#2E86AB')
+        
+        # 标注交易入场和离场点
+        if trades:
+            for i, trade in enumerate(trades):
+                try:
+                    entry_date = pd.to_datetime(trade.entry_date)
+                    exit_date = pd.to_datetime(trade.exit_date)
+                    
+                    # 获取对应时间点的资金值
+                    entry_value = equity_curve.asof(entry_date) if entry_date not in equity_curve.index else equity_curve.loc[entry_date]
+                    exit_value = equity_curve.asof(exit_date) if exit_date not in equity_curve.index else equity_curve.loc[exit_date]
+                    
+                    # 入场标注（绿色向上三角）
+                    ax.scatter(entry_date, entry_value,
+                               marker='^', s=150, c='green',
+                               edgecolors='darkgreen', linewidths=1.5,
+                               zorder=5, alpha=0.8)
+                    
+                    # 离场标注（红色向下三角）
+                    ax.scatter(exit_date, exit_value,
+                               marker='v', s=150, c='red',
+                               edgecolors='darkred', linewidths=1.5,
+                               zorder=5, alpha=0.8)
+                    
+                    # 标注收益
+                    pnl = trade.pnl
+                    pnl_pct = trade.pnl_pct
+                    
+                    # 在离场点上方/下方显示收益
+                    y_offset = (equity_curve.max() - equity_curve.min()) * 0.03
+                    if pnl > 0:
+                        text_y = exit_value + y_offset
+                        color = 'green'
+                        va = 'bottom'
+                    else:
+                        text_y = exit_value - y_offset
+                        color = 'red'
+                        va = 'top'
+                    
+                    # 添加文本标注
+                    ax.annotate(
+                        f'#{i+1}\n${pnl:+,.0f}\n({pnl_pct:+.1%})',
+                        xy=(exit_date, exit_value),
+                        xytext=(exit_date, text_y),
+                        fontsize=8,
+                        fontweight='bold',
+                        color=color,
+                        ha='center',
+                        va=va,
+                        bbox=dict(boxstyle='round,pad=0.4',
+                                facecolor='white',
+                                edgecolor=color,
+                                alpha=0.9,
+                                linewidth=1.2),
+                        zorder=10
+                    )
+                    
+                    # 连线（从入场到离场）
+                    line_color = 'green' if pnl > 0 else 'red'
+                    ax.plot([entry_date, exit_date], [entry_value, exit_value],
+                           color=line_color, linestyle=':', linewidth=1.2,
+                           alpha=0.5, zorder=2)
+                    
+                except Exception as e:
+                    continue
+        
+        ax.set_title(f'{symbol} - Portfolio Equity Curve with Trade Markers',
+                     fontsize=16, fontweight='bold', pad=20)
+        ax.set_xlabel('Date', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Portfolio Value ($)', fontsize=12, fontweight='bold')
+        ax.legend(loc='upper left', fontsize=10)
+        ax.grid(True, alpha=0.3, linestyle='--')
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        ax.xaxis.set_major_locator(mdates.MonthLocator())
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+        
+        # 添加统计信息
+        final_value = equity_curve.iloc[-1]
+        total_return = (final_value - initial_capital) / initial_capital
+        total_pnl = sum([t.pnl for t in trades]) if trades else 0
+        
+        textstr = f'Initial: ${initial_capital:,.0f}\n'
+        textstr += f'Final: ${final_value:,.0f}\n'
+        textstr += f'Return: {total_return:+.2%}\n'
+        textstr += f'Total P&L: ${total_pnl:+,.0f}'
+        
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.95, pad=0.6)
+        ax.text(0.02, 0.98, textstr, transform=ax.transAxes,
+                fontsize=11, verticalalignment='top', bbox=props,
+                fontweight='bold')
+        
+        # 添加图例说明
+        legend_text = '△ Entry (入场)  ▽ Exit (离场)'
+        ax.text(0.98, 0.02, legend_text, transform=ax.transAxes,
+                fontsize=9, ha='right', va='bottom',
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+        
+        plt.tight_layout()
+        
+        # 保存图表到素材文件夹
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        chart_path = assets_dir / f"{symbol}_equity_curve_{timestamp}.png"
+        fig.savefig(chart_path, dpi=100, bbox_inches='tight')
+        
+        # 准备指标数据
+        metrics = {
+            'total_return': total_return,
+            'final_value': final_value,
+            'total_pnl': total_pnl,
+            'num_trades': len(trades),
+            'sharpe_ratio': result.sharpe_ratio,
+            'max_drawdown': result.max_drawdown,
+            'win_rate': result.win_rate
+        }
+        
+        return equity_curve, trades, metrics, fig
+        
+    except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        st.error(f"生成报告失败: {e}\n\n{error_detail}")
+        return None, None, None, None
+
+def load_strategies():
+    """加载所有策略文件"""
+    strategies_dir = Path("strategies")
+    if not strategies_dir.exists():
+        return []
+    
+    strategies = []
+    for file in strategies_dir.glob("*.json"):
+        try:
+            with open(file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            strategies.append({
+                'filename': file.name,
+                'symbol': file.name.split('_')[0],
+                'name': data.get('name', 'Unknown'),
+                'signal_weights': data.get('signal_weights', {}),
+                'backtest_performance': data.get('backtest_performance', {}),
+                'metadata': data.get('metadata', {}),
+                'modified': datetime.fromtimestamp(file.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
+                'size': file.stat().st_size,
+                'path': str(file)
+            })
+        except Exception as e:
+            st.error(f"Error loading {file.name}: {e}")
+    
+    return sorted(strategies, key=lambda x: x['modified'], reverse=True)
+
+
+def get_latest_strategy(symbol):
+    """获取指定标的的最新策略"""
+    strategies_dir = Path("strategies")
+    pattern = f"{symbol}_*.json"
+    files = list(strategies_dir.glob(pattern))
+    
+    if not files:
+        return None
+    
+    files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+    
+    try:
+        with open(files[0], 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except:
+        return None
+
+
+def save_strategy(symbol, strategy_data):
+    """保存策略到文件"""
+    strategies_dir = Path("strategies")
+    strategies_dir.mkdir(exist_ok=True)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = strategies_dir / f"{symbol}_ST_{timestamp}.json"
+    
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(strategy_data, f, indent=2, ensure_ascii=False)
+    
+    return filename
+
+
+def delete_strategy(filepath):
+    """删除策略文件"""
+    try:
+        Path(filepath).unlink()
+        return True
+    except Exception as e:
+        st.error(f"删除失败: {e}")
+        return False
+
+
+def run_optimization(symbol, start_date, end_date, max_iter, threshold):
+    """运行策略优化"""
+    cmd = [
+        sys.executable,
+        "run_iterative_optimization.py",
+        "--symbol", symbol,
+        "--start", start_date,
+        "--end", end_date,
+        "--max-iter", str(max_iter),
+        "--threshold", str(threshold)
+    ]
+    
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=600  # 10分钟超时
+        )
+        return result.returncode == 0, result.stdout, result.stderr
+    except subprocess.TimeoutExpired:
+        return False, "", "优化超时（超过10分钟）"
+    except Exception as e:
+        return False, "", str(e)
+
+
+def run_scanner(symbols, start_date, end_date):
+    """运行策略扫描"""
+    # 临时修改 strategy_scanner.py 的 SYMBOLS
+    try:
+        # 直接调用 Python 代码
+        from strategy_scanner import StrategyScanner
+        
+        scanner = StrategyScanner(strategy_dir="strategies")
+        df_results = scanner.run_scan(
+            symbols=symbols,
+            start_date=start_date,
+            end_date=end_date,
+            output_csv="scan_results.csv",
+            output_html="scan_report.html"
+        )
+        
+        return True, df_results
+    except Exception as e:
+        return False, str(e)
+
+
+# Sidebar navigation
+st.sidebar.markdown("# 📊 Navigation Menu")
+page = st.sidebar.radio(
+    "Select Function",
+    ["🏠 Home", "🚀 Strategy Optimization", "📁 Strategy Management"],
+    label_visibility="collapsed"
+)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📌 Quick Info")
+
+# Display strategy statistics
+strategies = load_strategies()
+symbols = list(set([s['symbol'] for s in strategies]))
+st.sidebar.metric("Total Strategies", len(strategies))
+st.sidebar.metric("Number of Symbols", len(symbols))
+
+if strategies:
+    latest = strategies[0]
+    st.sidebar.info(f"**Latest Update**\n\n{latest['symbol']} - {latest['name']}\n\n{latest['modified']}")
+
+# ==================== Home ====================
+if page == "🏠 Home":
+    st.markdown('<h1 class="main-header">📊 QTSP - Quantitative Trading Strategy Platform</h1>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    ### AI Powered Option Experimentation Platform！
+    """)
+    
+    # 功能介绍
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="metric-card">
+            <h3>🚀 Strategy Optimization</h3>
+            <p>DeepSeek AI powered optimization, up to 10 iterations, automatically converges to the best configuration.</p>
+            <ul>
+                <li>AI-driven optimization</li>
+                <li>Automatic version management</li>
+                <li>Complete metadata recording</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="metric-card">
+            <h3>🔍 Strategy Scanning</h3>
+            <p>Batch backtest multiple strategies across multiple symbols, automatically generate comparison reports and visual charts.</p>
+            <ul>
+                <li>Multiple symbol comparison</li>
+                <li>8 professional charts</li>
+                <li>Complete HTML report</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div class="metric-card">
+            <h3>📁 Strategy Management</h3>
+            <p>View, edit, delete strategy files, intelligent version control system.</p>
+            <ul>
+                <li>Automatic version management</li>
+                <li>Online editor</li>
+                <li>Backup recovery</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # 最近策略列表
+    st.markdown("### 📋 Recently updated strategies")
+    
+    if strategies:
+        df = pd.DataFrame([{
+            'Symbol': s['symbol'],
+            'Strategy Name': s['name'],
+            'File Name': s['filename'],
+            'Updated Time': s['modified'],
+            'File Size': f"{s['size']} bytes"
+        } for s in strategies[:10]])
+        
+        st.dataframe(df, use_container_width=True, hide_index=True)
+    else:
+        st.info("No strategy files found, please run strategy optimization or manually add strategies.")
+    
+    # 快速操作
+    st.markdown("### ⚡ Quick Actions")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("🚀 Start Optimization", use_container_width=True):
+            st.switch_page = "🚀 Strategy Optimization"
+    
+    with col2:
+        if st.button("🔍 Start Scanning", use_container_width=True):
+            st.switch_page = "🔍 Strategy Scanning"
+    
+    with col3:
+        if st.button("📁 Manage Strategies", use_container_width=True):
+            st.switch_page = "📁 Strategy Management"
+
+
+# ==================== 策略优化 ====================
+elif page == "🚀 Strategy Optimization":
+    st.markdown('<h1 class="main-header">🚀 Strategy Optimization</h1>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    Use DeepSeek AI to automatically optimize strategy parameters, generate versioned strategy files with timestamps.
+    **Background tasks will continue to run, you can switch to other tabs to view progress.**
+    """)
+    
+    # 显示当前运行的优化任务
+    running_tasks = {tid: task for tid, task in st.session_state.tasks.items() 
+                    if task.status == "running" and tid.startswith("opt_")}
+    
+    if running_tasks:
+        st.info(f"⏳ There are {len(running_tasks)} optimization tasks running")
+        for task_id, task in running_tasks.items():
+            with st.expander(f"🔄 {task.task_name} (Running {task.get_duration():.0f} seconds)", expanded=False):
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.write(f"**Status:** {task.status}")
+                    st.write(f"**Start Time:** {task.start_time.strftime('%H:%M:%S')}")
+                with col2:
+                    if st.button("⏹️ Stop", key=f"stop_opt_{task_id}"):
+                        task.stop()
+                        st.rerun()
+    
+    # 单标的优化表单
+    st.markdown("### 📊 Optimize Strategy")
+    st.markdown("Generate optimized strategy for a specific symbol.")
+    
+    with st.form("single_optimization_form"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            symbol = st.text_input("Symbol", value="BABA", help="e.g.: BABA, NVDA, AAPL")
+            start_date = st.date_input("Backtest Start Date", value=pd.to_datetime("2025-01-01"), key="single_start")
+            max_iter = st.slider("Max Iterations", 1, 20, 10, key="single_iter")
+        
+        with col2:
+            st.write("")  # 占位
+            end_date = st.date_input("Backtest End Date", value=pd.to_datetime("2025-12-01"), key="single_end")
+            threshold = st.slider("Convergence Threshold", 0.01, 0.2, 0.05, 0.01, key="single_threshold")
+        
+        submitted = st.form_submit_button("🚀 Start Optimization", use_container_width=True)
+    
+    if submitted:
+        if not symbol:
+            st.error("Please enter the symbol code")
+        else:
+            # 创建后台任务
+            st.session_state.task_counter += 1
+            task_id = f"opt_{st.session_state.task_counter}"
+            
+            cmd = [
+                sys.executable,
+                "-u",  # 无缓冲模式，确保实时输出日志
+                "run_iterative_optimization.py",
+                "--symbol", symbol,
+                "--start", start_date.strftime("%Y-%m-%d"),
+                "--end", end_date.strftime("%Y-%m-%d"),
+                "--max-iter", str(max_iter),
+                "--threshold", str(threshold)
+            ]
+            
+            task = BackgroundTask(
+                task_id=task_id,
+                task_name=f"Optimize {symbol}",
+                cmd=cmd
+            )
+            
+            st.session_state.tasks[task_id] = task
+            task.start()
+            
+            st.success(f"✅ Task started! Task ID: {task_id}")
+            st.info("💡 You can switch to other pages, the task will continue to run in the background")
+            st.rerun()
+    
+    # 显示所有优化任务
+    st.markdown("---")
+    st.markdown("### 📋 Optimization Task List")
+    
+    # 显示所有优化任务
+    opt_tasks = {tid: task for tid, task in st.session_state.tasks.items() 
+                 if tid.startswith("opt_")}
+    
+    if not opt_tasks:
+        st.info("No optimization tasks found")
+    else:
+        # 按状态分组
+        for task_id, task in list(opt_tasks.items()):
+            status_icon = {
+                "running": "🔄",
+                "completed": "✅",
+                "failed": "❌",
+                "stopped": "⏹️"
+            }.get(task.status, "❓")
+            
+            with st.expander(
+                f"{status_icon} {task.task_name} | {task.status.upper()} | 开始于 {task.start_time.strftime('%Y-%m-%d %H:%M:%S')}",
+                expanded=(task.status == "running")
+            ):
+                col1, col2, col3 = st.columns([2, 2, 1])
+                
+                with col1:
+                    st.write(f"**Task ID:** {task_id}")
+                    st.write(f"**Status:** {task.status}")
+                
+                with col2:
+                    st.write(f"**Start Time:** {task.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                    if task.end_time:
+                        st.write(f"**End Time:** {task.end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                    st.write(f"**Run Time:** {task.get_duration():.1f} seconds")
+                
+                with col3:
+                    if task.status == "running":
+                        if st.button("⏹️ Stop Task", key=f"stop_task_{task_id}"):
+                            task.stop()
+                            st.rerun()
+                    else:
+                        if st.button("🗑️ Delete", key=f"del_task_{task_id}"):
+                            del st.session_state.tasks[task_id]
+                            st.rerun()
+                
+                # 实时日志
+                st.markdown("**📜 Real-time Logs:**")
+                logs = task.get_logs()
+                
+                if logs:
+                    # 控制选项
+                    col1, col2, col3 = st.columns([2, 2, 1])
+                    with col1:
+                        show_count = st.selectbox(
+                            "Show logs",
+                            options=[50, 100, 200, 500, "All"],
+                            index=1,  # 默认100
+                            key=f"opt_log_count_{task_id}"
+                        )
+                    with col2:
+                        st.caption(f"📊 Total: {len(logs)} log entries")
+                    with col3:
+                        if len(logs) > 50:
+                            full_log_text = "\n".join(logs)
+                            st.download_button(
+                                "📥",
+                                data=full_log_text,
+                                file_name=f"{task_id}_logs.txt",
+                                mime="text/plain",
+                                key=f"opt_save_logs_{task_id}",
+                                help="Download full logs"
+                            )
+                    
+                    # 显示日志
+                    if show_count == "All":
+                        display_logs = logs
+                    else:
+                        display_logs = logs[-show_count:]
+                    
+                    log_text = "\n".join(display_logs)
+                    st.code(log_text, language="log")
+                else:
+                    # 显示等待信息，但显示任务状态和已运行时间
+                    st.info(f"Waiting for logs to output... (Task {task.status}, running {task.get_duration():.1f}s)")
+                
+                # 自动刷新（运行中的任务始终刷新，无论是否有日志）
+                if task.status == "running":
+                    time.sleep(0.5)
+                    st.rerun()
+                
+                # 如果任务完成，显示结果
+                if task.status == "completed":
+                    st.success("🎉 Mission completed successfully!")
+                    
+                    # 尝试获取生成的策略
+                    symbol = task.task_name.split()[-1]  # 从任务名称提取标的
+                    latest = get_latest_strategy(symbol)
+                    if latest:
+                        st.json(latest)
+                        st.download_button(
+                            "💾 Download Strategy File",
+                            data=json.dumps(latest, indent=2, ensure_ascii=False),
+                            file_name=f"{symbol}_strategy.json",
+                            mime="application/json",
+                            key=f"download_{task_id}"
+                        )
+
+
+# ==================== 策略扫描 ====================
+elif page == "📁 Strategy Management":
+    st.markdown('<h1 class="main-header">📁 Strategy Management</h1>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    Manage your trading strategies: browse, compare, edit, and perform batch scanning with selected strategies.
+    """)
+    
+    # 创建标签页
+    mgmt_tab1, mgmt_tab2, mgmt_tab3 = st.tabs(["📋 Strategy List", "⚖️ Strategy Comparison", "🎯 Custom Scan"])
+    
+    # ==================== Tab 1: Strategy List ====================
+    with mgmt_tab1:
+        st.markdown("### 📋 Strategy Library")
+        
+        # 过滤选项
+        col1, col2, col3 = st.columns([2, 2, 1])
+        with col1:
+            filter_symbol = st.selectbox("Select Symbol", ["All"] + symbols, key="filter_symbol_list")
+        with col2:
+            sort_by = st.selectbox("Sort by", ["Modified Time", "Symbol", "File Name"])
+        with col3:
+            st.write("")
+            st.write("")
+            if st.button("🔄 Refresh", use_container_width=True):
+                st.rerun()
+        
+        # Filter strategies
+        filtered_strategies = strategies
+        if filter_symbol != "All":
+            filtered_strategies = [s for s in strategies if s['symbol'] == filter_symbol]
+        
+        # Sort
+        if sort_by == "Symbol":
+            filtered_strategies = sorted(filtered_strategies, key=lambda x: x['symbol'])
+        elif sort_by == "File Name":
+            filtered_strategies = sorted(filtered_strategies, key=lambda x: x['filename'])
+        
+        st.markdown(f"**Found {len(filtered_strategies)} strategies**")
+        
+        if not filtered_strategies:
+            st.info("No strategy files found")
+        else:
+            for strategy in filtered_strategies:
+                with st.expander(f"**{strategy['symbol']}** - {strategy['name']} ({strategy['filename']})"):
+                    col1, col2 = st.columns([3, 1])
+                    
+                    with col1:
+                        st.markdown(f"""
+                        - **File Name**: {strategy['filename']}
+                        - **Symbol**: {strategy['symbol']}
+                        - **Strategy Name**: {strategy['name']}
+                        - **Updated Time**: {strategy['modified']}
+                        - **File Size**: {strategy['size']} bytes
+                        """)
+                        
+                        # Display metadata
+                        if strategy['metadata']:
+                            st.markdown("**Metadata**:")
+                            meta = strategy['metadata']
+                            if 'best_return' in meta:
+                                st.write(f"- Return: {meta['best_return']:+.2%}" if isinstance(meta['best_return'], (int, float)) else f"- Return: {meta['best_return']}")
+                            if 'generated_at' in meta:
+                                st.write(f"- Generated At: {meta['generated_at']}")
+                            if 'backtest_period' in meta:
+                                st.write(f"- Backtest Period: {meta['backtest_period']}")
+                        
+                        # Display backtest performance
+                        if strategy.get('backtest_performance'):
+                            st.markdown("**Backtest Performance**:")
+                            perf = strategy['backtest_performance']
+                            if isinstance(perf, dict):
+                                # 单标的性能
+                                if 'total_return' in perf:
+                                    cols = st.columns(4)
+                                    cols[0].metric("Return", f"{perf.get('total_return', 0):+.2%}")
+                                    cols[1].metric("Win Rate", f"{perf.get('win_rate', 0):.1%}")
+                                    cols[2].metric("Sharpe", f"{perf.get('sharpe_ratio', 0):.2f}")
+                                    cols[3].metric("Trades", perf.get('num_trades', 0))
+                                else:
+                                    # 多标的性能
+                                    for sym, p in perf.items():
+                                        st.write(f"**{sym}**: Return {p.get('total_return', 0):+.2%}, Win Rate {p.get('win_rate', 0):.1%}, Trades {p.get('num_trades', 0)}")
+                    
+                    with col2:
+                        # Action buttons
+                        if st.button("📝 Edit", key=f"edit_{strategy['filename']}", use_container_width=True):
+                            st.session_state['editing'] = strategy['path']
+                        
+                        if st.button("💾 Download", key=f"download_{strategy['filename']}", use_container_width=True):
+                            with open(strategy['path'], 'r', encoding='utf-8') as f:
+                                content = f.read()
+                            st.download_button(
+                                "Confirm Download",
+                                data=content,
+                                file_name=strategy['filename'],
+                                mime="application/json",
+                                key=f"dl_{strategy['filename']}"
+                            )
+                        
+                        if st.button("🗑️ Delete", key=f"delete_{strategy['filename']}", use_container_width=True, type="secondary"):
+                            if delete_strategy(strategy['path']):
+                                st.success("Deleted successfully")
+                                st.rerun()
+                    
+                    # JSON content
+                    try:
+                        with open(strategy['path'], 'r', encoding='utf-8') as f:
+                            content = json.load(f)
+                        st.json(content)
+                    except Exception as e:
+                        st.error(f"Failed to read file: {e}")
+        
+        # Editor
+        if 'editing' in st.session_state:
+            st.markdown("---")
+            st.markdown("### ✏️ Edit Strategy")
+            
+            filepath = st.session_state['editing']
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                edited = st.text_area(
+                    "JSON Content",
+                    value=content,
+                    height=400,
+                    help="Please ensure JSON format is correct"
+                )
+                
+                col1, col2, col3 = st.columns([1, 1, 4])
+                with col1:
+                    if st.button("💾 Save", use_container_width=True):
+                        try:
+                            # Validate JSON
+                            json.loads(edited)
+                            with open(filepath, 'w', encoding='utf-8') as f:
+                                f.write(edited)
+                            st.success("Saved successfully")
+                            del st.session_state['editing']
+                            st.rerun()
+                        except json.JSONDecodeError as e:
+                            st.error(f"JSON format error: {e}")
+                
+                with col2:
+                    if st.button("❌ Cancel", use_container_width=True):
+                        del st.session_state['editing']
+                        st.rerun()
+            
+            except Exception as e:
+                st.error(f"Failed to read file: {e}")
+                del st.session_state['editing']
+        
+        # Upload new strategy
+        st.markdown("---")
+        st.markdown("### ➕ Upload New Strategy")
+        
+        uploaded_file = st.file_uploader("Select JSON file", type=['json'], key="upload_strategy_list")
+        if uploaded_file:
+            try:
+                content = json.loads(uploaded_file.read().decode('utf-8'))
+                
+                symbol = st.text_input("Symbol", value=content.get('metadata', {}).get('symbol', ''), key="upload_symbol_list")
+                
+                if st.button("📤 Upload"):
+                    if symbol:
+                        filename = save_strategy(symbol, content)
+                        st.success(f"Uploaded successfully: {filename}")
+                        st.rerun()
+                    else:
+                        st.error("Please enter the symbol")
+            except Exception as e:
+                st.error(f"File format error: {e}")
+    
+    # ==================== Tab 2: Strategy Comparison ====================
+    with mgmt_tab2:
+        st.markdown("### ⚖️ Strategy Comparison")
+        st.markdown("Select multiple strategies to compare their performance metrics side by side.")
+        
+        if not strategies:
+            st.info("No strategies available for comparison")
+        else:
+            # 策略选择
+            st.markdown("#### Select Strategies to Compare (2-5 strategies)")
+            
+            # 创建策略选择列表
+            strategy_options = {}
+            for s in strategies:
+                key = f"{s['symbol']} - {s['name']} ({s['filename']})"
+                strategy_options[key] = s
+            
+            selected_keys = st.multiselect(
+                "Choose strategies",
+                options=list(strategy_options.keys()),
+                max_selections=5,
+                help="Select 2 to 5 strategies to compare"
+            )
+            
+            if len(selected_keys) < 2:
+                st.info("Please select at least 2 strategies to compare")
+            else:
+                selected_strategies = [strategy_options[key] for key in selected_keys]
+                
+                st.markdown(f"**Comparing {len(selected_strategies)} strategies**")
+                
+                # 创建对比表格
+                comparison_data = []
+                for strat in selected_strategies:
+                    row = {
+                        "Strategy": strat['name'],
+                        "Symbol": strat['symbol'],
+                        "File": strat['filename'],
+                        "Modified": strat['modified']
+                    }
+                    
+                    # 添加元数据
+                    if strat.get('metadata'):
+                        meta = strat['metadata']
+                        if 'best_return' in meta and isinstance(meta['best_return'], (int, float)):
+                            row["Best Return"] = f"{meta['best_return']:+.2%}"
+                        if 'backtest_period' in meta:
+                            row["Period"] = meta['backtest_period']
+                    
+                    # 添加回测性能
+                    if strat.get('backtest_performance'):
+                        perf = strat['backtest_performance']
+                        if isinstance(perf, dict) and 'total_return' in perf:
+                            row["Total Return"] = f"{perf.get('total_return', 0):+.2%}"
+                            row["Win Rate"] = f"{perf.get('win_rate', 0):.1%}"
+                            row["Sharpe Ratio"] = f"{perf.get('sharpe_ratio', 0):.2f}"
+                            row["Max Drawdown"] = f"{perf.get('max_drawdown', 0):.2%}"
+                            row["Num Trades"] = perf.get('num_trades', 0)
+                            row["Avg Win"] = f"${perf.get('avg_win', 0):,.0f}"
+                            row["Avg Loss"] = f"${perf.get('avg_loss', 0):,.0f}"
+                    
+                    comparison_data.append(row)
+                
+                # 显示对比表格
+                df_comparison = pd.DataFrame(comparison_data)
+                st.dataframe(df_comparison, use_container_width=True, hide_index=True)
+                
+                # 显示信号权重对比
+                st.markdown("#### Signal Weights Comparison")
+                
+                signal_comparison = {}
+                for strat in selected_strategies:
+                    strat_label = f"{strat['symbol']}_{strat['name']}"
+                    if strat.get('signal_weights'):
+                        for signal, weight in strat['signal_weights'].items():
+                            if signal not in signal_comparison:
+                                signal_comparison[signal] = {}
+                            signal_comparison[signal][strat_label] = weight
+                
+                if signal_comparison:
+                    signal_df = pd.DataFrame(signal_comparison).T
+                    signal_df = signal_df.fillna(0)
+                    
+                    # 使用柱状图显示
+                    st.bar_chart(signal_df)
+                    
+                    # 也显示表格
+                    with st.expander("View Signal Weights Table"):
+                        st.dataframe(signal_df, use_container_width=True)
+                
+                # 下载对比报告
+                st.markdown("---")
+                if st.button("📥 Download Comparison Report", use_container_width=True):
+                    report_data = {
+                        "comparison_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "strategies": comparison_data,
+                        "signal_weights": signal_comparison
+                    }
+                    report_json = json.dumps(report_data, indent=2, ensure_ascii=False)
+                    st.download_button(
+                        "Download JSON",
+                        data=report_json,
+                        file_name=f"strategy_comparison_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                        mime="application/json"
+                    )
+    
+    # ==================== Tab 3: Custom Scan ====================
+    with mgmt_tab3:
+        st.markdown("### 🎯 Custom Strategy Scan")
+        st.markdown("Select specific strategies and symbols to perform a custom batch backtest scan.")
+        
+        if not strategies:
+            st.info("No strategies available. Please create or upload strategies first.")
+        else:
+            st.markdown("#### Configure Custom Scan")
+            st.markdown("*Select symbols and strategies - all combinations will be tested*")
+            
+            # 按标的分组策略
+            strategies_by_symbol = {}
+            for s in strategies:
+                sym = s['symbol']
+                if sym not in strategies_by_symbol:
+                    strategies_by_symbol[sym] = []
+                strategies_by_symbol[sym].append(s)
+            
+            # Step 1: 选择标的
+            st.markdown("**Step 1: Select Symbols to Test**")
+            test_symbols = st.multiselect(
+                "Choose symbols",
+                options=symbols,
+                default=symbols[:3] if len(symbols) >= 3 else symbols,
+                help="Select one or more symbols for backtesting",
+                key="custom_scan_symbols"
+            )
+            
+            # Step 2: 选择策略（支持多选）
+            st.markdown("**Step 2: Select Strategies to Test**")
+            st.caption("💡 You can select multiple strategies - each will be tested against each symbol")
+            
+            selected_strategies = []
+            symbol_strategy_pairs = []
+            
+            if test_symbols:
+                # 为每个标的展示可用策略
+                strategy_selection_mode = st.radio(
+                    "Strategy Selection Mode",
+                    options=["Quick Select (Same strategies for all symbols)", 
+                             "Advanced (Different strategies per symbol)"],
+                    key="strategy_mode",
+                    horizontal=True
+                )
+                
+                if strategy_selection_mode.startswith("Quick Select"):
+                    # 快速模式：选择策略，应用到所有标的
+                    st.markdown("**Select strategies to test across all symbols:**")
+                    
+                    # 收集所有可用策略（去重）
+                    all_strategies = {}
+                    for sym in test_symbols:
+                        sym_strategies = strategies_by_symbol.get(sym, [])
+                        for s in sym_strategies:
+                            key = f"{s['filename']}"
+                            if key not in all_strategies:
+                                all_strategies[key] = s
+                    
+                    # 添加通用策略
+                    universal_strategies = [s for s in strategies if s.get('metadata', {}).get('type') == 'universal']
+                    for s in universal_strategies:
+                        key = f"{s['filename']}"
+                        if key not in all_strategies:
+                            all_strategies[key] = s
+                    
+                    if all_strategies:
+                        strategy_list = list(all_strategies.values())
+                        strategy_display = [f"{s['name']} ({s['symbol']}) - {s['filename']}" for s in strategy_list]
+                        
+                        selected_indices = st.multiselect(
+                            "Strategies",
+                            options=range(len(strategy_list)),
+                            default=[0] if len(strategy_list) > 0 else [],
+                            format_func=lambda i: strategy_display[i],
+                            key="quick_strategies"
+                        )
+                        
+                        # 生成所有组合
+                        for sym in test_symbols:
+                            for idx in selected_indices:
+                                symbol_strategy_pairs.append({
+                                    'symbol': sym,
+                                    'strategy': strategy_list[idx]
+                                })
+                    else:
+                        st.warning("No strategies available for the selected symbols")
+                
+                else:
+                    # 高级模式：为每个标的单独选择策略
+                    st.markdown("**Select strategies for each symbol:**")
+                    
+                    for test_sym in test_symbols:
+                        with st.expander(f"**{test_sym}** - Select Strategies", expanded=False):
+                            # 获取该标的可用的策略
+                            available_strategies = strategies_by_symbol.get(test_sym, [])
+                            
+                            # 添加通用策略
+                            universal_strategies = [s for s in strategies if s.get('metadata', {}).get('type') == 'universal']
+                            all_available = available_strategies + universal_strategies
+                            
+                            if not all_available:
+                                st.warning(f"No strategies available for {test_sym}")
+                                continue
+                            
+                            # 策略多选
+                            strategy_display = [f"{s['name']} - {s['filename']}" for s in all_available]
+                            selected_indices = st.multiselect(
+                                f"Strategies for {test_sym}",
+                                options=range(len(all_available)),
+                                default=[0] if len(all_available) > 0 else [],
+                                format_func=lambda i: strategy_display[i],
+                                key=f"strat_select_{test_sym}",
+                                label_visibility="collapsed"
+                            )
+                            
+                            # 显示选中策略的信息
+                            if selected_indices:
+                                st.caption(f"**{len(selected_indices)} strateg{'ies' if len(selected_indices) > 1 else 'y'} selected:**")
+                                for idx in selected_indices:
+                                    selected_strategy = all_available[idx]
+                                    symbol_strategy_pairs.append({
+                                        'symbol': test_sym,
+                                        'strategy': selected_strategy
+                                    })
+                                    
+                                    col1, col2, col3 = st.columns(3)
+                                    with col1:
+                                        st.caption(f"📊 {selected_strategy['name']}")
+                                    with col2:
+                                        perf = selected_strategy.get('backtest_performance', {})
+                                        if perf:
+                                            returns = perf.get('total_return', 0) * 100
+                                            st.caption(f"💰 {returns:+.1f}%")
+                                    with col3:
+                                        perf = selected_strategy.get('backtest_performance', {})
+                                        if perf:
+                                            win_rate = perf.get('win_rate', 0) * 100
+                                            st.caption(f"🎯 {win_rate:.1f}%")
+            else:
+                st.info("👆 Please select at least one symbol to continue")
+            
+            st.markdown("---")
+            st.markdown("#### Scan Configuration")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                scan_start = st.date_input(
+                    "Start Date",
+                    value=pd.to_datetime("2025-01-01"),
+                    key="custom_scan_start"
+                )
+            with col2:
+                scan_end = st.date_input(
+                    "End Date",
+                    value=pd.to_datetime("2025-12-01"),
+                    key="custom_scan_end"
+                )
+            
+            # 显示选择摘要
+            st.markdown("**Step 3: Review & Launch**")
+            
+            if symbol_strategy_pairs:
+                # 统计唯一的标的和策略数量
+                unique_symbols = set([p['symbol'] for p in symbol_strategy_pairs])
+                unique_strategies = set([p['strategy']['filename'] for p in symbol_strategy_pairs])
+                
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Symbols", len(unique_symbols))
+                col2.metric("Strategies", len(unique_strategies))
+                col3.metric("Total Tests", len(symbol_strategy_pairs))
+                
+                # 显示所有组合
+                with st.expander("📋 View All Test Combinations", expanded=False):
+                    for i, pair in enumerate(symbol_strategy_pairs, 1):
+                        st.caption(f"{i}. **{pair['symbol']}** × {pair['strategy']['name']}")
+            
+            # 启动扫描按钮
+            if st.button("🚀 Start Custom Scan", type="primary", use_container_width=True):
+                if not test_symbols:
+                    st.error("❌ Please select at least one symbol to test")
+                elif not symbol_strategy_pairs:
+                    st.error("❌ Please select at least one strategy to test")
+                else:
+                    # 生成任务ID
+                    task_id = f"custom_scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    
+                    # 构建命令：传递所有 symbol-strategy pairs
+                    # 格式：--symbols sym1 sym2 ... --strategies strat1 strat2 ...
+                    symbols_list = [p['symbol'] for p in symbol_strategy_pairs]
+                    strategies_list = [p['strategy']['path'] for p in symbol_strategy_pairs]
+                    
+                    cmd = [
+                        sys.executable, "-u",
+                        "run_strategy_scanner.py",
+                        "--symbols"
+                    ] + symbols_list + [
+                        "--start", str(scan_start),
+                        "--end", str(scan_end),
+                        "--strategies"
+                    ] + strategies_list
+                    
+                    # 创建后台任务
+                    task = BackgroundTask(
+                        task_id=task_id,
+                        task_name=f"Custom scan: {len(unique_symbols)} symbols × {len(unique_strategies)} strategies = {len(symbol_strategy_pairs)} tests",
+                        cmd=cmd
+                    )
+                    task.start()
+                    
+                    st.session_state.tasks[task_id] = task
+                    
+                    st.success(f"✅ Custom scan started! Task ID: {task_id}")
+                    st.info("💡 Scroll down to view the task in the task list with real-time logs. You can also switch to other tabs, the task will continue running in the background.")
+                    
+                    # 自动滚动到任务列表
+                    time.sleep(0.5)
+                    st.rerun()
+        
+        # 显示自定义扫描任务列表
+        st.markdown("---")
+        st.markdown("### 📋 Custom Scan Tasks")
+        
+        custom_scan_tasks = {tid: task for tid, task in st.session_state.tasks.items() 
+                            if tid.startswith("custom_scan_")}
+        
+        if not custom_scan_tasks:
+            st.info("No custom scan tasks found. Start a custom scan above to see tasks here.")
+        else:
+            # 自动刷新选项
+            auto_refresh = st.checkbox("🔄 Auto Refresh (every 2 seconds)", value=True, key="custom_scan_auto_refresh")
+            
+            for task_id, task in list(custom_scan_tasks.items()):
+                status_icon = {
+                    "running": "🔄",
+                    "completed": "✅",
+                    "failed": "❌",
+                    "stopped": "⏹️"
+                }.get(task.status, "❓")
+                
+                with st.expander(
+                    f"{status_icon} {task.task_name} | {task.status.upper()} | Duration: {task.get_duration():.1f}s",
+                    expanded=(task.status == "running")
+                ):
+                    col1, col2, col3 = st.columns([2, 2, 1])
+                    
+                    with col1:
+                        st.write(f"**Task ID:** {task_id}")
+                        st.write(f"**Status:** {task.status}")
+                    
+                    with col2:
+                        st.write(f"**Start Time:** {task.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                        if task.end_time:
+                            st.write(f"**End Time:** {task.end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                        st.write(f"**Duration:** {task.get_duration():.1f} seconds")
+                    
+                    with col3:
+                        if task.status == "running":
+                            if st.button("⏹️ Stop", key=f"stop_custom_{task_id}"):
+                                task.stop()
+                                st.rerun()
+                        else:
+                            if st.button("🗑️ Delete", key=f"del_custom_{task_id}"):
+                                del st.session_state.tasks[task_id]
+                                st.rerun()
+                    
+                    # 如果任务完成，显示生成的报告
+                    if task.status == "completed":
+                        st.markdown("---")
+                        
+                        # 从日志中提取关键指标
+                        logs = task.get_logs()
+                        summary_metrics = {}
+                        for log in logs:
+                            # 查找类似 "BABA: 收益 +177.45%, 夏普 1.54, 胜率 66.7%" 的日志
+                            if "收益" in log and "夏普" in log and "胜率" in log:
+                                # 提取指标
+                                import re
+                                match = re.search(r'收益\s+([+-]?\d+\.?\d*)%.*夏普\s+(\d+\.?\d*).*胜率\s+(\d+\.?\d*)%', log)
+                                if match:
+                                    summary_metrics = {
+                                        'return': float(match.group(1)),
+                                        'sharpe': float(match.group(2)),
+                                        'win_rate': float(match.group(3))
+                                    }
+                                    break
+                        
+                        # 显示关键指标卡片
+                        if summary_metrics:
+                            st.markdown("**📈 Performance Summary:**")
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                return_color = "normal" if summary_metrics['return'] >= 0 else "off"
+                                st.metric("Total Return", f"{summary_metrics['return']:+.2f}%", delta_color=return_color)
+                            with col2:
+                                st.metric("Sharpe Ratio", f"{summary_metrics['sharpe']:.2f}")
+                            with col3:
+                                st.metric("Win Rate", f"{summary_metrics['win_rate']:.1f}%")
+                            st.markdown("---")
+                        
+                        st.markdown("**📊 Generated Reports:**")
+                        
+                        # 检查报告文件
+                        report_html = Path("report_assets/scan_report.html")
+                        report_csv = Path("report_assets/scan_results.csv")
+                        
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            if report_html.exists():
+                                st.success("✅ HTML Report Generated")
+                                with open(report_html, 'r', encoding='utf-8') as f:
+                                    html_content = f.read()
+                                    st.download_button(
+                                        "📥 Download HTML Report",
+                                        data=html_content,
+                                        file_name=f"custom_scan_report_{task_id}.html",
+                                        mime="text/html",
+                                        key=f"download_html_{task_id}"
+                                    )
+                                
+                                # 显示报告预览按钮
+                                if st.button("👁️ Preview Report", key=f"preview_report_{task_id}"):
+                                    st.session_state[f"show_report_{task_id}"] = True
+                            else:
+                                st.warning("⚠️ HTML report not found")
+                        
+                        with col2:
+                            if report_csv.exists():
+                                st.success("✅ CSV Results Generated")
+                                with open(report_csv, 'r', encoding='utf-8') as f:
+                                    csv_content = f.read()
+                                    st.download_button(
+                                        "📥 Download CSV Results",
+                                        data=csv_content,
+                                        file_name=f"custom_scan_results_{task_id}.csv",
+                                        mime="text/csv",
+                                        key=f"download_csv_{task_id}"
+                                    )
+                                
+                                # 显示 CSV 预览
+                                try:
+                                    df = pd.read_csv(report_csv)
+                                    st.dataframe(df, use_container_width=True)
+                                except:
+                                    pass
+                            else:
+                                st.warning("⚠️ CSV results not found")
+                        
+                        # 显示报告预览
+                        if st.session_state.get(f"show_report_{task_id}", False):
+                            st.markdown("---")
+                            st.markdown("**📈 Report Preview:**")
+                            
+                            # 查找所有相关的图表文件
+                            report_dir = Path("report_assets")
+                            
+                            # 从 HTML 报告中提取最新的图表文件名
+                            latest_charts = {
+                                'equity': [],
+                                'comparison': None,
+                                'details': None
+                            }
+                            
+                            if report_html.exists():
+                                try:
+                                    with open(report_html, 'r', encoding='utf-8') as f:
+                                        html_content = f.read()
+                                        
+                                        # 提取图片文件名
+                                        import re
+                                        
+                                        # 查找权益曲线图
+                                        equity_matches = re.findall(r'scan_equity_[^"]+\.png', html_content)
+                                        latest_charts['equity'] = list(set(equity_matches))
+                                        
+                                        # 查找对比图
+                                        comparison_match = re.search(r'scan_comparison_[^"]+\.png', html_content)
+                                        if comparison_match:
+                                            latest_charts['comparison'] = comparison_match.group(0)
+                                        
+                                        # 查找详细分析图
+                                        details_match = re.search(r'scan_details_[^"]+\.png', html_content)
+                                        if details_match:
+                                            latest_charts['details'] = details_match.group(0)
+                                except Exception as e:
+                                    st.warning(f"Could not parse HTML report: {e}")
+                            
+                            # 显示权益曲线图
+                            if latest_charts['equity']:
+                                st.markdown("### 📈 Equity Curves")
+                                for chart_name in sorted(latest_charts['equity']):
+                                    chart_path = report_dir / chart_name
+                                    if chart_path.exists():
+                                        # 从文件名提取标的符号
+                                        symbol = chart_name.split('_')[2]
+                                        st.markdown(f"**{symbol}**")
+                                        st.image(str(chart_path), use_container_width=True)
+                            
+                            # 显示对比图表
+                            if latest_charts['comparison']:
+                                comparison_path = report_dir / latest_charts['comparison']
+                                if comparison_path.exists():
+                                    st.markdown("### 📊 Performance Comparison")
+                                    st.image(str(comparison_path), use_container_width=True)
+                            
+                            # 显示详细分析图表
+                            if latest_charts['details']:
+                                details_path = report_dir / latest_charts['details']
+                                if details_path.exists():
+                                    st.markdown("### 📈 Strategy Details Analysis")
+                                    st.image(str(details_path), use_container_width=True)
+                            
+                            # 显示数据表格
+                            if report_csv.exists():
+                                st.markdown("### 📋 Scan Results")
+                                df = pd.read_csv(report_csv)
+                                st.dataframe(df, use_container_width=True)
+                            
+                            # 显示交易详情表格（使用 iframe 渲染）
+                            if report_html.exists():
+                                try:
+                                    with open(report_html, 'r', encoding='utf-8') as f:
+                                        html_content = f.read()
+                                        
+                                        # 检查是否有交易详情表格
+                                        if "Trade Details" in html_content:
+                                            st.markdown("### 📝 Trade Details")
+                                            
+                                            # 提取所有交易详情表格
+                                            import re
+                                            
+                                            # 找到所有交易详情部分（包含完整的表格）
+                                            trade_sections = re.findall(
+                                                r'<div class="section">\s*<h2>📝 Trade Details - (.*?)</h2>\s*<table class="data-table">(.*?)</table>\s*</div>',
+                                                html_content,
+                                                re.DOTALL
+                                            )
+                                            
+                                            if trade_sections:
+                                                # 构建完整的 HTML（包含样式）
+                                                full_html = """
+                                                <!DOCTYPE html>
+                                                <html>
+                                                <head>
+                                                    <meta charset="UTF-8">
+                                                    <style>
+                                                        body {
+                                                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                                                            margin: 0;
+                                                            padding: 20px;
+                                                            background: white;
+                                                        }
+                                                        .section {
+                                                            margin: 30px 0;
+                                                        }
+                                                        h3 {
+                                                            color: #2d3748;
+                                                            margin-bottom: 15px;
+                                                            font-size: 18px;
+                                                            border-bottom: 2px solid #667eea;
+                                                            padding-bottom: 8px;
+                                                        }
+                                                        .data-table {
+                                                            width: 100%;
+                                                            border-collapse: collapse;
+                                                            font-size: 13px;
+                                                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                                        }
+                                                        .data-table thead {
+                                                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                                        }
+                                                        .data-table th {
+                                                            color: white;
+                                                            padding: 12px 8px;
+                                                            text-align: center;
+                                                            font-weight: bold;
+                                                            border: 1px solid #5a67d8;
+                                                        }
+                                                        .data-table td {
+                                                            padding: 10px 8px;
+                                                            border: 1px solid #e5e7eb;
+                                                            text-align: center;
+                                                        }
+                                                        .data-table tbody tr:nth-child(odd) {
+                                                            background-color: #f9fafb;
+                                                        }
+                                                        .data-table tbody tr:hover {
+                                                            background-color: #e5e7eb;
+                                                        }
+                                                        .positive {
+                                                            color: #10b981;
+                                                            font-weight: bold;
+                                                        }
+                                                        .negative {
+                                                            color: #ef4444;
+                                                            font-weight: bold;
+                                                        }
+                                                    </style>
+                                                </head>
+                                                <body>
+                                                """
+                                                
+                                                for symbol_name, table_content in trade_sections:
+                                                    full_html += f"""
+                                                    <div class="section">
+                                                        <h3>{symbol_name}</h3>
+                                                        <table class="data-table">
+                                                            {table_content}
+                                                        </table>
+                                                    </div>
+                                                    """
+                                                
+                                                full_html += """
+                                                </body>
+                                                </html>
+                                                """
+                                                
+                                                # 使用 components 渲染
+                                                st.components.v1.html(full_html, height=600, scrolling=True)
+                                            else:
+                                                st.info("No trade details table found in report")
+                                except Exception as e:
+                                    st.error(f"Could not extract trade details: {e}")
+                                    import traceback
+                                    st.code(traceback.format_exc())
+                            
+                            if st.button("❌ Close Preview", key=f"close_preview_{task_id}"):
+                                st.session_state[f"show_report_{task_id}"] = False
+                                st.rerun()
+                    
+                    # 显示实时日志
+                    st.markdown("---")
+                    st.markdown("**📄 Real-time Logs:**")
+                    logs = task.get_logs()
+                    
+                    if logs:
+                        # 控制选项
+                        col1, col2, col3 = st.columns([2, 2, 1])
+                        with col1:
+                            show_count = st.selectbox(
+                                "Show logs",
+                                options=[50, 100, 200, 500, "All"],
+                                index=2,  # 默认200
+                                key=f"log_count_{task_id}"
+                            )
+                        with col2:
+                            st.caption(f"📊 Total: {len(logs)} log entries")
+                        with col3:
+                            if len(logs) > 50:
+                                full_log_text = "\n".join(logs)
+                                st.download_button(
+                                    "📥",
+                                    data=full_log_text,
+                                    file_name=f"{task_id}_logs.txt",
+                                    mime="text/plain",
+                                    key=f"save_logs_{task_id}",
+                                    help="Download full logs"
+                                )
+                        
+                        # 显示日志
+                        if show_count == "All":
+                            display_logs = logs
+                        else:
+                            display_logs = logs[-show_count:]
+                        
+                        log_text = "\n".join(display_logs)
+                        st.text_area(
+                            "Logs",
+                            value=log_text,
+                            height=400,
+                            key=f"custom_log_display_{task_id}",
+                            label_visibility="collapsed"
+                        )
+                        
+                        # 任务运行中时显示提示
+                        if task.status == "running":
+                            st.info("🔄 Task is running... Logs auto-refresh every 2 seconds")
+                    else:
+                        st.info("⏳ Waiting for logs to output...")
+            
+            # 自动刷新逻辑
+            if auto_refresh:
+                # 检查是否有运行中的任务
+                has_running = any(task.status == "running" for task in custom_scan_tasks.values())
+                if has_running:
+                    time.sleep(2)
+                    st.rerun()
+
+
+# ==================== Results View ====================
+if __name__ == "__main__":
+    pass  # Streamlit handles the execution
+
+
+# Footer
+st.markdown("---")
+st.markdown("""
+<div style="text-align: center; color: #666;">
+    <p>Quantitative Trading Strategy Platform v1.0 | Powered by Streamlit</p>
+    <p>© 2025 All Rights Reserved</p>
+</div>
+""", unsafe_allow_html=True)
+

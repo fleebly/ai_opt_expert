@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  option-trading-system:
+    build: .
+    container_name: option-trading-system
+    ports:
+      - "8501:8501"  # Portfolio Management System
+      - "8502:8502"  # Option Expert
+      - "8503:8503"  # Strategy Lab
+    environment:
+      - POLYGON_API_KEY=${POLYGON_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+    volumes:
+      - ./logs:/app/logs
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - option-trading-network
+
+networks:
+  option-trading-network:
+    driver: bridge
+
+
+
+
