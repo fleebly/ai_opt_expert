@@ -38,40 +38,142 @@ st.set_page_config(
 # 自定义 CSS
 st.markdown("""
 <style>
+    /* RockAlpha-inspired dark theme */
+    body {
+        background-color: #0A0A0A;
+        color: #EAEAEA;
+    }
+    
+    /* Main header with RockAlpha gradient */
     .main-header {
         font-size: 2.5rem;
         font-weight: bold;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(to right, #A100FF, #632BFF);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 2rem;
+        text-align: center;
     }
+    
+    /* Metric cards with dark theme */
     .metric-card {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
         padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        border: 1px solid rgba(161, 0, 255, 0.2);
     }
+    
+    /* Success messages */
     .success-box {
-        background-color: #d4edda;
-        border-left: 4px solid #28a745;
+        background: linear-gradient(135deg, #0f3b39 0%, #1a5e5a 100%);
+        border-left: 4px solid #38ef7d;
         padding: 1rem;
-        border-radius: 5px;
+        border-radius: 8px;
         margin: 1rem 0;
+        color: #38ef7d;
     }
+    
+    /* Warning messages */
     .warning-box {
-        background-color: #fff3cd;
+        background: linear-gradient(135deg, #3b361f 0%, #5e551a 100%);
         border-left: 4px solid #ffc107;
         padding: 1rem;
-        border-radius: 5px;
+        border-radius: 8px;
         margin: 1rem 0;
+        color: #ffc107;
     }
+    
+    /* Error messages */
     .error-box {
-        background-color: #f8d7da;
+        background: linear-gradient(135deg, #3b1f24 0%, #5e2a35 100%);
         border-left: 4px solid #dc3545;
         padding: 1rem;
-        border-radius: 5px;
+        border-radius: 8px;
         margin: 1rem 0;
+        color: #dc3545;
+    }
+    
+    /* Sidebar styling */
+    [data-testid='stSidebar'] {
+        background: linear-gradient(135deg, #0F0F1A 0%, #141428 100%);
+        border-right: 1px solid rgba(161, 0, 255, 0.1);
+    }
+    
+    /* Sidebar navigation items */
+    [data-testid='stSidebar'] button {
+        background: transparent;
+        color: #EAEAEA !important;
+        border: 1px solid rgba(161, 0, 255, 0.3);
+        border-radius: 8px;
+        margin: 0.25rem 0;
+    }
+    
+    [data-testid='stSidebar'] button:hover {
+        background: linear-gradient(135deg, #A100FF 0%, #632BFF 100%);
+        border: 1px solid #A100FF;
+    }
+    
+    /* Main content area */
+    .main {
+        background-color: #0A0A0A;
+    }
+    
+    /* Dataframe styling */
+    [data-testid='stDataFrame'] {
+        background: #1A1A2E;
+        border-radius: 8px;
+        border: 1px solid rgba(161, 0, 255, 0.1);
+    }
+    
+    /* Buttons */
+    button {
+        background: linear-gradient(135deg, #A100FF 0%, #632BFF 100%) !important;
+        border: none !important;
+        color: white !important;
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+    }
+    
+    button:hover {
+        background: linear-gradient(135deg, #B42AFF 0%, #7A3CFF 100%) !important;
+        transform: translateY(-2px);
+        transition: all 0.2s ease;
+    }
+    
+    /* Input fields */
+    input, select, textarea {
+        background: #1A1A2E !important;
+        border: 1px solid rgba(161, 0, 255, 0.3) !important;
+        border-radius: 8px !important;
+        color: #EAEAEA !important;
+    }
+    
+    input:focus, select:focus, textarea:focus {
+        border: 1px solid #A100FF !important;
+        box-shadow: 0 0 0 2px rgba(161, 0, 255, 0.2) !important;
+    }
+    
+    /* Metrics */
+    [data-testid='stMetricValue'] {
+        color: #A100FF !important;
+        font-weight: bold;
+    }
+    
+    [data-testid='stMetricDelta'] {
+        color: #38ef7d !important;
+    }
+    
+    /* Expander */
+    [data-testid='stExpander'] {
+        background: #1A1A2E;
+        border-radius: 8px;
+        border: 1px solid rgba(161, 0, 255, 0.1);
+    }
+    
+    [data-testid='stExpander'] div:first-child {
+        background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+        border-radius: 8px 8px 0 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -670,38 +772,92 @@ elif page == "📈 Real-time Monitor":
     # Add custom CSS for the monitoring dashboard
     st.markdown("""
     <style>
+        /* RockAlpha-inspired monitor cards */
         .monitor-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
             padding: 1.5rem;
-            border-radius: 15px;
-            color: white;
+            border-radius: 12px;
+            color: #EAEAEA;
             margin-bottom: 1rem;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            border: 1px solid rgba(161, 0, 255, 0.2);
+            transition: transform 0.2s ease;
         }
+        
+        .monitor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+        }
+        
         .monitor-card-positive {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            background: linear-gradient(135deg, #0f3b39 0%, #1a5e5a 100%);
             padding: 1.5rem;
-            border-radius: 15px;
-            color: white;
+            border-radius: 12px;
+            color: #38ef7d;
             margin-bottom: 1rem;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            border: 1px solid rgba(56, 239, 125, 0.3);
+            transition: transform 0.2s ease;
         }
+        
+        .monitor-card-positive:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+        }
+        
         .monitor-card-negative {
-            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            background: linear-gradient(135deg, #3b1f24 0%, #5e2a35 100%);
             padding: 1.5rem;
-            border-radius: 15px;
-            color: white;
+            border-radius: 12px;
+            color: #ff6b6b;
             margin-bottom: 1rem;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            transition: transform 0.2s ease;
         }
+        
+        .monitor-card-negative:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+        }
+        
         .big-number {
             font-size: 3rem;
             font-weight: bold;
             margin: 0.5rem 0;
+            text-align: center;
+            background: linear-gradient(to right, #A100FF, #632BFF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
+        
         .subtitle-text {
             font-size: 1.2rem;
             opacity: 0.9;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Data source indicator */
+        .data-source {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-align: center;
+            margin: 0.3rem 0;
+            font-weight: 500;
+        }
+        
+        /* Metric styling */
+        [data-testid='stMetricValue'] {
+            color: #A100FF !important;
+        }
+        
+        /* Chart container */
+        .chart-container {
+            background: #1A1A2E;
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid rgba(161, 0, 255, 0.1);
         }
     </style>
     """, unsafe_allow_html=True)
@@ -867,17 +1023,18 @@ elif page == "📈 Real-time Monitor":
         for idx, result in enumerate(monitor_results):
             card_class = "monitor-card-positive" if result['total_return'] > 0 else "monitor-card-negative"
             data_source = "💾 Cached" if result.get('is_cached', False) else "🔴 Live"
+            data_source_class = "data-source"
             
             col1, col2 = st.columns([2, 3])
             
             with col1:
                 st.markdown(f"""
                 <div class="{card_class}">
-                    <h2 style="margin:0;">📊 {result['symbol']}</h2>
+                    <h2 style="margin:0; text-align: center;">📊 {result['symbol']}</h2>
                     <p class="subtitle-text">{result['strategy_name']}</p>
-                    <p style="font-size: 0.9rem; opacity: 0.8; margin: 0.3rem 0;">{data_source}</p>
+                    <p class="{data_source_class}">{data_source}</p>
                     <div class="big-number">{result['total_return']:+.2%}</div>
-                    <p style="font-size: 1.1rem; margin: 0.5rem 0;">
+                    <p style="font-size: 1.1rem; margin: 0.5rem 0; text-align: center;">
                         💰 ${result['final_value']:,.0f} | 
                         📊 {result['num_trades']} trades | 
                         🎯 {result['win_rate']:.1f}% win rate
@@ -890,21 +1047,30 @@ elif page == "📈 Real-time Monitor":
                     # Create equity curve chart
                     fig, ax = plt.subplots(figsize=(10, 4))
                     
+                    # Set dark theme for matplotlib
+                    fig.patch.set_facecolor('#1A1A2E')
+                    ax.set_facecolor('#1A1A2E')
+                    
                     equity_series = pd.Series(result['equity_curve'])
                     equity_series.index = pd.to_datetime(equity_series.index)
                     
-                    ax.plot(equity_series.index, equity_series.values, 
-                           linewidth=2.5, color='#2E86AB' if result['total_return'] > 0 else '#E63946')
-                    ax.axhline(y=10000, color='gray', linestyle='--', alpha=0.5, linewidth=1)
-                    ax.fill_between(equity_series.index, 10000, equity_series.values, 
-                                   alpha=0.3, color='#2E86AB' if result['total_return'] > 0 else '#E63946')
+                    line_color = '#38ef7d' if result['total_return'] > 0 else '#ff6b6b'
+                    fill_color = '#38ef7d' if result['total_return'] > 0 else '#ff6b6b'
                     
-                    ax.set_title(f'{result["symbol"]} Equity Curve', fontsize=12, fontweight='bold')
-                    ax.set_xlabel('Date', fontsize=10)
-                    ax.set_ylabel('Portfolio Value ($)', fontsize=10)
-                    ax.grid(True, alpha=0.3)
+                    ax.plot(equity_series.index, equity_series.values, 
+                           linewidth=2.5, color=line_color)
+                    ax.axhline(y=10000, color='#A100FF', linestyle='--', alpha=0.5, linewidth=1)
+                    ax.fill_between(equity_series.index, 10000, equity_series.values, 
+                                   alpha=0.3, color=fill_color)
+                    
+                    # Style the chart
+                    ax.set_title(f'{result["symbol"]} Equity Curve', fontsize=12, fontweight='bold', color='#EAEAEA')
+                    ax.set_xlabel('Date', fontsize=10, color='#EAEAEA')
+                    ax.set_ylabel('Portfolio Value ($)', fontsize=10, color='#EAEAEA')
+                    ax.tick_params(colors='#EAEAEA')
+                    ax.grid(True, alpha=0.2, color='#A100FF')
                     ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
-                    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+                    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right', color='#EAEAEA')
                     plt.tight_layout()
                     
                     st.pyplot(fig)

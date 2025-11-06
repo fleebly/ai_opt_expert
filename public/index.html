@@ -15,12 +15,12 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
                 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
                 sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0F0F1A 0%, #141428 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            color: #EAEAEA;
         }
         
         .container {
@@ -38,6 +38,9 @@
             font-size: 2.5rem;
             margin-bottom: 1rem;
             font-weight: 700;
+            background: linear-gradient(to right, #A100FF, #632BFF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .subtitle {
@@ -50,9 +53,9 @@
             display: inline-block;
             width: 40px;
             height: 40px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
+            border: 4px solid rgba(161, 0, 255, 0.3);
             border-radius: 50%;
-            border-top-color: white;
+            border-top-color: #A100FF;
             animation: spin 1s ease-in-out infinite;
             margin: 2rem auto;
         }
@@ -65,26 +68,28 @@
             display: inline-block;
             margin-top: 2rem;
             padding: 1rem 2rem;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid white;
+            background: linear-gradient(135deg, #A100FF 0%, #632BFF 100%);
+            border: 2px solid #A100FF;
             border-radius: 8px;
             color: white;
             text-decoration: none;
             transition: all 0.3s ease;
+            font-weight: 500;
         }
         
         .link:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: linear-gradient(135deg, #B42AFF 0%, #7A3CFF 100%);
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(161, 0, 255, 0.3);
         }
         
         .info {
             margin-top: 2rem;
             padding: 1rem;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(26, 26, 46, 0.7);
             border-radius: 8px;
             font-size: 0.9rem;
-            opacity: 0.8;
+            border: 1px solid rgba(161, 0, 255, 0.2);
         }
     </style>
 </head>
