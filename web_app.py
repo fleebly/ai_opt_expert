@@ -45,19 +45,27 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     }
     
-    /* Top navigation bar */
+    /* Top navigation bar - Fixed at top */
     .top-nav {
         background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
         padding: 1rem 2rem;
         border-bottom: 1px solid rgba(161, 0, 255, 0.2);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        position: sticky;
+        position: fixed;
         top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
         z-index: 999;
         display: flex;
         justify-content: space-between;
         align-items: center;
         backdrop-filter: blur(10px);
+    }
+    
+    /* Add padding to body to account for fixed nav */
+    .main .block-container {
+        padding-top: 5rem !important;
     }
     
     .nav-title {
@@ -75,23 +83,39 @@ st.markdown("""
     }
     
     .nav-link {
-        color: #B0B0C0;
-        text-decoration: none;
+        color: #B0B0C0 !important;
+        text-decoration: none !important;
         font-weight: 500;
         padding: 0.5rem 1rem;
         border-radius: 8px;
         transition: all 0.3s ease;
         font-size: 1rem;
+        border: none !important;
+        border-bottom: none !important;
+        outline: none !important;
     }
     
     .nav-link:hover {
-        color: #FFFFFF;
+        color: #FFFFFF !important;
         background: rgba(161, 0, 255, 0.1);
+        text-decoration: none !important;
+        border-bottom: none !important;
     }
     
     .nav-link.active {
-        color: #FFFFFF;
+        color: #FFFFFF !important;
         background: linear-gradient(135deg, #A100FF 0%, #632BFF 100%);
+        text-decoration: none !important;
+        border-bottom: none !important;
+    }
+    
+    /* Remove any underline from nav links */
+    .nav-link:visited,
+    .nav-link:active,
+    .nav-link:focus {
+        text-decoration: none !important;
+        border-bottom: none !important;
+        outline: none !important;
     }
     
     /* Main header with RockAlpha gradient */
