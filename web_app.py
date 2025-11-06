@@ -103,18 +103,21 @@ st.markdown("""
         border: none !important;
         border-bottom: none !important;
         outline: none !important;
+        background: transparent !important;
+        cursor: pointer !important;
+        font-family: inherit !important;
     }
     
     .nav-link:hover {
         color: #FFFFFF !important;
-        background: rgba(161, 0, 255, 0.1);
+        background: rgba(161, 0, 255, 0.1) !important;
         text-decoration: none !important;
         border-bottom: none !important;
     }
     
     .nav-link.active {
         color: #FFFFFF !important;
-        background: linear-gradient(135deg, #A100FF 0%, #632BFF 100%);
+        background: linear-gradient(135deg, #A100FF 0%, #632BFF 100%) !important;
         text-decoration: none !important;
         border-bottom: none !important;
     }
@@ -463,25 +466,35 @@ class BackgroundTask:
 # Top Navigation Bar
 def render_top_navigation():
     # Get current page from query params or default to home
-    current_page = st.query_params.get("page", ["home"])[0]
+    if "page" not in st.query_params:
+        current_page = "home"
+    else:
+        current_page = st.query_params.get("page", ["home"])[0]
     
-    # Navigation HTML
-    nav_html = """
+    # Navigation HTML with JavaScript to handle clicks without page reload
+    nav_html = f"""
     <div class="top-nav">
         <h1 class="nav-title">📊 QTSP</h1>
         <div class="nav-links">
-            <a href="?page=home" class="nav-link {}">🏠 Home</a>
-            <a href="?page=monitor" class="nav-link {}">📈 Real-time Monitor</a>
-            <a href="?page=optimization" class="nav-link {}">🚀 Strategy Optimization</a>
-            <a href="?page=management" class="nav-link {}">📁 Strategy Management</a>
+            <button class="nav-link {'active' if current_page == 'home' else ''}" onclick="navigateTo('home')">🏠 Home</button>
+            <button class="nav-link {'active' if current_page == 'monitor' else ''}" onclick="navigateTo('monitor')">📈 Real-time Monitor</button>
+            <button class="nav-link {'active' if current_page == 'optimization' else ''}" onclick="navigateTo('optimization')">🚀 Strategy Optimization</button>
+            <button class="nav-link {'active' if current_page == 'management' else ''}" onclick="navigateTo('management')">📁 Strategy Management</button>
         </div>
     </div>
-    """.format(
-        "active" if current_page == "home" else "",
-        "active" if current_page == "monitor" else "",
-        "active" if current_page == "optimization" else "",
-        "active" if current_page == "management" else ""
-    )
+    <script>
+    function navigateTo(page) {{
+        // Update URL without page reload
+        const url = new URL(window.location);
+        url.searchParams.set('page', page);
+        window.history.pushState({{page: page}}, '', url);
+        
+        // Trigger Streamlit rerun by updating query params
+        // This will be handled by Streamlit's query params system
+        window.location.search = '?page=' + page;
+    }}
+    </script>
+    """
     
     st.markdown(nav_html, unsafe_allow_html=True)
     
