@@ -484,20 +484,11 @@ def render_top_navigation():
     </div>
     <script>
     function navigateTo(page) {{
-        // Prevent default link behavior
-        event.preventDefault();
-        
         // Update URL and trigger Streamlit rerun
         // Streamlit will detect the query param change and rerun
         const newUrl = window.location.pathname + '?page=' + page;
         window.location.href = newUrl;
     }}
-    
-    // Also handle browser back/forward buttons
-    window.addEventListener('popstate', function(event) {{
-        // Streamlit will automatically handle query param changes
-        window.location.reload();
-    }});
     </script>
     """
     
