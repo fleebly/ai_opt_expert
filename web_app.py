@@ -38,11 +38,37 @@ st.set_page_config(
 # 自定义 CSS - Updated to match RockAlpha design with top navigation
 st.markdown("""
 <style>
-    /* RockAlpha-inspired dark theme with purple gradients */
-    body {
-        background: linear-gradient(135deg, #0A0A12 0%, #0F0F1A 100%);
-        color: #EAEAEA;
+    /* RockAlpha-inspired light theme with white background */
+    html, body {
+        background: #FFFFFF !important;
+        background-image: none !important;
+        color: #1F2937;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        min-height: 100vh;
+    }
+    
+    /* Override Streamlit default background */
+    #root {
+        background: #FFFFFF !important;
+    }
+    
+    /* Ensure all Streamlit containers use white background */
+    [data-testid="stAppViewContainer"] {
+        background: #FFFFFF !important;
+    }
+    
+    [data-testid="stAppViewContainer"] > div {
+        background: #FFFFFF !important;
+    }
+    
+    /* Streamlit main container */
+    .main {
+        background: #FFFFFF !important;
+    }
+    
+    /* Block container */
+    .main .block-container {
+        background: #FFFFFF !important;
     }
     
     /* Top navigation bar - Fixed at top */
@@ -52,12 +78,13 @@ st.markdown("""
         top: 0;
         left: 0;
         right: 0;
-        background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+        background: #FFFFFF !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
         padding: 1rem 2rem;
-        border-bottom: 1px solid rgba(161, 0, 255, 0.2);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         z-index: 999;
-        backdrop-filter: blur(10px);
     }
     
     /* Add padding to body to account for fixed nav (no Streamlit header) */
@@ -78,10 +105,12 @@ st.markdown("""
     .nav-title {
         font-size: 1.8rem;
         font-weight: 700;
-        background: linear-gradient(to right, #A100FF, #632BFF);
+        background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        background-clip: text;
         margin: 0;
+        letter-spacing: -0.02em;
     }
     
     .nav-links {
@@ -131,21 +160,215 @@ st.markdown("""
     /* Main header with RockAlpha gradient */
     .main-header {
         font-size: 2.5rem;
-        font-weight: bold;
-        background: linear-gradient(to right, #A100FF, #632BFF);
+        font-weight: 700;
+        background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        background-clip: text;
         margin: 2rem 0;
         text-align: center;
+        letter-spacing: -0.02em;
     }
     
-    /* Metric cards with dark theme */
+    /* Update text colors for light theme */
+    h1, h2, h3, h4, h5, h6, p, span, div, label {
+        color: #1F2937 !important;
+    }
+    
+    /* Streamlit text elements */
+    [data-testid='stMarkdownContainer'] {
+        color: #1F2937 !important;
+    }
+    
+    [data-testid='stText'] {
+        color: #1F2937 !important;
+    }
+    
+    /* Ensure Streamlit widgets have white background */
+    [data-baseweb="base-input"] {
+        background: #FFFFFF !important;
+    }
+    
+    [data-baseweb="select"] > div {
+        background: #FFFFFF !important;
+    }
+    
+    /* Selectbox styling */
+    [data-baseweb="select"] {
+        background: #FFFFFF !important;
+        border-color: rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    [data-baseweb="select"] > div {
+        background: #FFFFFF !important;
+        color: #1F2937 !important;
+    }
+    
+    [data-baseweb="popover"] {
+        background: #FFFFFF !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    }
+    
+    [data-baseweb="popover"] li {
+        background: #FFFFFF !important;
+        color: #1F2937 !important;
+    }
+    
+    [data-baseweb="popover"] li:hover {
+        background: #F9FAFB !important;
+    }
+    
+    /* Multiselect styling */
+    [data-baseweb="tag"] {
+        background: #F3F4F6 !important;
+        color: #1F2937 !important;
+        border-color: rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    /* Checkbox styling */
+    [data-baseweb="checkbox"] {
+        background: #FFFFFF !important;
+        border-color: rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    [data-baseweb="checkbox"]:checked {
+        background: #6366F1 !important;
+        border-color: #6366F1 !important;
+    }
+    
+    /* Radio button styling */
+    [data-baseweb="radio"] {
+        background: #FFFFFF !important;
+    }
+    
+    [data-baseweb="radio"] label {
+        color: #1F2937 !important;
+    }
+    
+    /* Slider styling */
+    [data-baseweb="slider"] {
+        background: #FFFFFF !important;
+    }
+    
+    [data-baseweb="slider"] [role="slider"] {
+        background: #6366F1 !important;
+        border-color: #6366F1 !important;
+    }
+    
+    [data-baseweb="slider"] [role="slider"]:hover {
+        background: #7C3AED !important;
+    }
+    
+    /* Date input styling */
+    [data-baseweb="datepicker"] {
+        background: #FFFFFF !important;
+        border-color: rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    [data-baseweb="calendar"] {
+        background: #FFFFFF !important;
+    }
+    
+    [data-baseweb="calendar"] button {
+        color: #1F2937 !important;
+    }
+    
+    [data-baseweb="calendar"] button:hover {
+        background: #F9FAFB !important;
+    }
+    
+    /* File uploader styling */
+    [data-testid='stFileUploader'] {
+        background: #FFFFFF !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        border-radius: 10px !important;
+    }
+    
+    /* Text area styling */
+    textarea {
+        background: #FFFFFF !important;
+        border: 1px solid rgba(0, 0, 0, 0.2) !important;
+        color: #1F2937 !important;
+    }
+    
+    /* Number input styling */
+    [data-baseweb="input"] {
+        background: #FFFFFF !important;
+        border-color: rgba(0, 0, 0, 0.2) !important;
+        color: #1F2937 !important;
+    }
+    
+    /* Tabs styling */
+    [data-baseweb="tabs"] {
+        background: #FFFFFF !important;
+    }
+    
+    [data-baseweb="tab"] {
+        color: #6B7280 !important;
+        background: #FFFFFF !important;
+    }
+    
+    [data-baseweb="tab"]:hover {
+        background: #F9FAFB !important;
+        color: #1F2937 !important;
+    }
+    
+    [data-baseweb="tab"][aria-selected="true"] {
+        color: #6366F1 !important;
+        background: #FFFFFF !important;
+    }
+    
+    /* Progress bar styling */
+    [data-baseweb="progress-bar"] {
+        background: #F3F4F6 !important;
+    }
+    
+    [data-baseweb="progress-bar"] > div {
+        background: #6366F1 !important;
+    }
+    
+    /* Spinner styling */
+    [data-testid='stSpinner'] {
+        color: #6366F1 !important;
+    }
+    
+    /* Caption styling */
+    [data-testid='stCaption'] {
+        color: #6B7280 !important;
+    }
+    
+    /* Info/Warning/Success/Error boxes */
+    [data-baseweb="notification"] {
+        background: #FFFFFF !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        color: #1F2937 !important;
+    }
+    
+    /* Code block styling */
+    [data-testid='stCodeBlock'] {
+        background: #F9FAFB !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    [data-testid='stCodeBlock'] code {
+        color: #1F2937 !important;
+    }
+    
+    /* Metric cards with modern light theme */
     .metric-card {
-        background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+        background: #FFFFFF;
         padding: 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-        border: 1px solid rgba(161, 0, 255, 0.2);
+        border-radius: 16px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        border-color: rgba(99, 102, 241, 0.3);
+        box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.1), 0 2px 4px -1px rgba(99, 102, 241, 0.06);
+        transform: translateY(-2px);
     }
     
     /* Success messages */
@@ -208,78 +431,257 @@ st.markdown("""
         display: none;
     }
     
-    /* Main content area */
-    .main {
-        background: linear-gradient(135deg, #0A0A12 0%, #0F0F1A 100%);
-        padding-top: 1rem;
-    }
+    /* Main content area - already defined above */
     
-    /* Dataframe styling */
+    /* Dataframe styling - Modern light theme */
     [data-testid='stDataFrame'] {
-        background: #1A1A2E;
-        border-radius: 8px;
-        border: 1px solid rgba(161, 0, 255, 0.1);
+        background: #FFFFFF !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        overflow: hidden;
     }
     
-    /* Buttons */
+    /* Table styling */
+    table {
+        background: #FFFFFF !important;
+    }
+    
+    thead {
+        background: rgba(99, 102, 241, 0.08) !important;
+    }
+    
+    th {
+        color: #1F2937 !important;
+        font-weight: 600 !important;
+        border-color: rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    td {
+        color: #374151 !important;
+        border-color: rgba(0, 0, 0, 0.05) !important;
+    }
+    
+    tr:hover {
+        background: rgba(99, 102, 241, 0.05) !important;
+    }
+    
+    /* Buttons - Modern RockAlpha style */
     button {
-        background: linear-gradient(135deg, #A100FF 0%, #632BFF 100%) !important;
+        background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%) !important;
         border: none !important;
         color: white !important;
-        border-radius: 8px !important;
-        font-weight: 500 !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+        padding: 0.5rem 1rem !important;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
+        box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3), 0 2px 4px -1px rgba(99, 102, 241, 0.2) !important;
+        transition: all 0.2s ease !important;
+        cursor: pointer !important;
+        white-space: nowrap !important;
+        text-overflow: ellipsis !important;
+        overflow: hidden !important;
+        min-height: 2.25rem !important;
+        line-height: 1.2 !important;
     }
     
     button:hover {
-        background: linear-gradient(135deg, #B42AFF 0%, #7A3CFF 100%) !important;
-        transform: translateY(-2px);
-        transition: all 0.2s ease;
+        background: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4), 0 4px 6px -2px rgba(99, 102, 241, 0.3) !important;
     }
     
-    /* Input fields */
+    button:active {
+        transform: translateY(0) !important;
+    }
+    
+    /* Secondary button style */
+    button[kind="secondary"] {
+        background: #F9FAFB !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        color: #1F2937 !important;
+        box-shadow: none !important;
+    }
+    
+    button[kind="secondary"]:hover {
+        background: #F3F4F6 !important;
+        border-color: rgba(99, 102, 241, 0.3) !important;
+    }
+    
+    /* Stop/Delete button specific styling - use key selector */
+    button[key*="stop"], button[key*="del"] {
+        min-width: 75px !important;
+        max-width: 100px !important;
+        font-size: 0.875rem !important;
+        padding: 0.5rem 0.8rem !important;
+        letter-spacing: 0.01em !important;
+        text-align: center !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    /* Ensure button text doesn't wrap or distort */
+    button[key*="stop"] > div,
+    button[key*="del"] > div,
+    button[key*="stop"] span,
+    button[key*="del"] span {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        width: 100% !important;
+        text-align: center !important;
+    }
+    
+    /* Input fields - Modern light style */
     input, select, textarea {
-        background: #1A1A2E !important;
-        border: 1px solid rgba(161, 0, 255, 0.3) !important;
-        border-radius: 8px !important;
-        color: #EAEAEA !important;
+        background: #FFFFFF !important;
+        border: 1px solid rgba(0, 0, 0, 0.2) !important;
+        border-radius: 10px !important;
+        color: #1F2937 !important;
+        padding: 0.625rem 0.875rem !important;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
+        transition: all 0.2s ease !important;
     }
     
     input:focus, select:focus, textarea:focus {
-        border: 1px solid #A100FF !important;
-        box-shadow: 0 0 0 2px rgba(161, 0, 255, 0.2) !important;
+        border: 1px solid #6366F1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+        background: #FFFFFF !important;
+        outline: none !important;
     }
     
-    /* Metrics */
+    input::placeholder, textarea::placeholder {
+        color: rgba(107, 114, 128, 0.6) !important;
+    }
+    
+    /* Metrics - Modern style */
     [data-testid='stMetricValue'] {
-        color: #A100FF !important;
-        font-weight: bold;
+        color: #6366F1 !important;
+        font-weight: 700 !important;
+        font-size: 1.5rem !important;
     }
     
     [data-testid='stMetricDelta'] {
-        color: #38ef7d !important;
+        color: #10B981 !important;
+        font-weight: 600 !important;
     }
     
-    /* Expander */
+    [data-testid='stMetricDelta'][aria-label*="negative"] {
+        color: #EF4444 !important;
+    }
+    
+    /* Expander - Modern light style */
     [data-testid='stExpander'] {
-        background: #1A1A2E;
-        border-radius: 8px;
-        border: 1px solid rgba(161, 0, 255, 0.1);
+        background: #FFFFFF !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        margin: 1rem 0 !important;
     }
     
     [data-testid='stExpander'] div:first-child {
-        background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
-        border-radius: 8px 8px 0 0;
+        background: #F9FAFB !important;
+        border-radius: 12px 12px 0 0 !important;
+        padding: 1rem !important;
+    }
+    
+    [data-testid='stExpander'] summary {
+        color: #1F2937 !important;
+        font-weight: 600 !important;
     }
     
     /* Footer */
     footer {
-        background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+        background: #FFFFFF !important;
         padding: 1.5rem;
-        border-top: 1px solid rgba(161, 0, 255, 0.2);
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
         margin-top: 2rem;
         text-align: center;
+        color: rgba(107, 114, 128, 0.8) !important;
+    }
+    
+    /* Info/Warning/Success boxes */
+    .stAlert {
+        border-radius: 12px !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    /* Selectbox and other widgets */
+    [data-baseweb="select"] {
+        background: #FFFFFF !important;
+        border-color: rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    /* Checkbox */
+    [data-baseweb="checkbox"] {
+        border-color: rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    [data-baseweb="checkbox"]:checked {
+        background: #6366F1 !important;
+        border-color: #6366F1 !important;
+    }
+    
+    /* Reduce spacing in expanders and containers */
+    [data-testid='stExpander'] > div {
+        padding: 0.5rem 1rem !important;
+    }
+    
+    /* Reduce spacing between markdown elements */
+    .main .block-container .element-container {
+        margin-bottom: 0.2rem !important;
+    }
+    
+    /* Compact markdown spacing */
+    .main .block-container p {
+        margin: 0.15rem 0 !important;
+        line-height: 1.4 !important;
+    }
+    
+    /* Compact columns spacing */
+    [data-testid='column'] {
+        padding: 0.25rem !important;
+    }
+    
+    /* Ensure no overflow in expanders */
+    [data-testid='stExpander'] {
+        max-width: 100% !important;
+        overflow: hidden !important;
+    }
+    
+    [data-testid='stExpander'] > div {
+        max-width: 100% !important;
+        overflow-x: auto !important;
+    }
+    
+    /* Compact code blocks */
+    code {
+        padding: 0.15rem 0.4rem !important;
+        font-size: 0.9em !important;
+        margin: 0 !important;
+    }
+    
+    /* Compact log display - reduce line spacing */
+    pre {
+        line-height: 1.4 !important;
+        margin: 0.5rem 0 !important;
+        padding: 0.75rem !important;
+    }
+    
+    /* Reduce spacing in code blocks */
+    [data-testid='stCodeBlock'] {
+        margin: 0.3rem 0 !important;
+    }
+    
+    [data-testid='stCodeBlock'] pre {
+        line-height: 1.5 !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+    
+    /* Reduce caption spacing */
+    [data-testid='stCaption'] {
+        margin: 0.2rem 0 !important;
+        padding: 0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -512,27 +914,30 @@ def render_top_navigation():
     # Add custom CSS for navigation buttons to match the design
     st.markdown("""
     <style>
-    /* Navigation button styling */
+    /* Navigation button styling - Modern RockAlpha light style */
     div[data-testid="column"] button[key="nav_home"],
     div[data-testid="column"] button[key="nav_monitor"],
     div[data-testid="column"] button[key="nav_optimization"],
     div[data-testid="column"] button[key="nav_management"] {
-        background: transparent !important;
-        border: 1px solid rgba(161, 0, 255, 0.3) !important;
-        color: #B0B0C0 !important;
-        font-weight: 500 !important;
-        border-radius: 8px !important;
-        transition: all 0.3s ease !important;
+        background: #F9FAFB !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        color: #6B7280 !important;
+        font-weight: 600 !important;
+        border-radius: 10px !important;
+        transition: all 0.2s ease !important;
         height: 2.5rem !important;
+        font-size: 0.9rem !important;
+        box-shadow: none !important;
     }
     
     div[data-testid="column"] button[key="nav_home"]:hover,
     div[data-testid="column"] button[key="nav_monitor"]:hover,
     div[data-testid="column"] button[key="nav_optimization"]:hover,
     div[data-testid="column"] button[key="nav_management"]:hover {
-        background: rgba(161, 0, 255, 0.1) !important;
-        color: #FFFFFF !important;
-        border-color: rgba(161, 0, 255, 0.5) !important;
+        background: rgba(99, 102, 241, 0.1) !important;
+        color: #1F2937 !important;
+        border-color: rgba(99, 102, 241, 0.3) !important;
+        transform: translateY(-1px) !important;
     }
     
     /* Active button styling - primary type */
@@ -540,9 +945,18 @@ def render_top_navigation():
     div[data-testid="column"] button[key="nav_monitor"][class*="primary"],
     div[data-testid="column"] button[key="nav_optimization"][class*="primary"],
     div[data-testid="column"] button[key="nav_management"][class*="primary"] {
-        background: linear-gradient(135deg, #A100FF 0%, #632BFF 100%) !important;
+        background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%) !important;
         color: #FFFFFF !important;
         border-color: transparent !important;
+        box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3), 0 2px 4px -1px rgba(99, 102, 241, 0.2) !important;
+    }
+    
+    div[data-testid="column"] button[key="nav_home"][class*="primary"]:hover,
+    div[data-testid="column"] button[key="nav_monitor"][class*="primary"]:hover,
+    div[data-testid="column"] button[key="nav_optimization"][class*="primary"]:hover,
+    div[data-testid="column"] button[key="nav_management"][class*="primary"]:hover {
+        background: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%) !important;
+        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4), 0 4px 6px -2px rgba(99, 102, 241, 0.3) !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -751,51 +1165,51 @@ elif display_page == "📈 Real-time Monitor":
     <style>
         /* RockAlpha-inspired monitor cards */
         .monitor-card {
-            background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+            background: #FFFFFF;
             padding: 1.5rem;
             border-radius: 12px;
-            color: #EAEAEA;
+            color: #1F2937;
             margin-bottom: 1rem;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-            border: 1px solid rgba(161, 0, 255, 0.2);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0, 0, 0, 0.1);
             transition: transform 0.2s ease;
         }
         
         .monitor-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
         }
         
         .monitor-card-positive {
-            background: linear-gradient(135deg, #0f3b39 0%, #1a5e5a 100%);
+            background: #FFFFFF;
             padding: 1.5rem;
             border-radius: 12px;
-            color: #38ef7d;
+            color: #10B981;
             margin-bottom: 1rem;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-            border: 1px solid rgba(56, 239, 125, 0.3);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            border: 1px solid rgba(16, 185, 129, 0.3);
             transition: transform 0.2s ease;
         }
         
         .monitor-card-positive:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2), 0 2px 4px -1px rgba(16, 185, 129, 0.1);
         }
         
         .monitor-card-negative {
-            background: linear-gradient(135deg, #3b1f24 0%, #5e2a35 100%);
+            background: #FFFFFF;
             padding: 1.5rem;
             border-radius: 12px;
-            color: #ff6b6b;
+            color: #EF4444;
             margin-bottom: 1rem;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255, 107, 107, 0.3);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            border: 1px solid rgba(239, 68, 68, 0.3);
             transition: transform 0.2s ease;
         }
         
         .monitor-card-negative:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2), 0 2px 4px -1px rgba(239, 68, 68, 0.1);
         }
         
         .big-number {
@@ -803,9 +1217,10 @@ elif display_page == "📈 Real-time Monitor":
             font-weight: bold;
             margin: 0.5rem 0;
             text-align: center;
-            background: linear-gradient(to right, #A100FF, #632BFF);
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
         .subtitle-text {
@@ -842,138 +1257,173 @@ elif display_page == "📈 Real-time Monitor":
     # Configuration
     monitor_start_date = "2025-04-01"
     
+    # Initialize cache in session state
+    if 'monitor_cache' not in st.session_state:
+        st.session_state.monitor_cache = {
+            'results': None,
+            'timestamp': None,
+            'cache_duration': 300  # 缓存5分钟
+        }
+    
     # Check API key availability
     import os
     has_api_key = bool(os.getenv('POLYGON_API_KEY'))
     
-    if has_api_key:
-        st.info(f"📅 Monitoring Period: **{monitor_start_date}** to **Today** | 🔴 Live data enabled | Auto-refresh every 30 seconds")
-    else:
-        st.warning(f"📅 Monitoring Period: **{monitor_start_date}** to **Today** | 💾 Using cached backtest results (POLYGON_API_KEY not set for live data)")
+    # Check if we need to refresh (cache expired or manual refresh)
+    cache_valid = False
+    if st.session_state.monitor_cache['results'] is not None:
+        if st.session_state.monitor_cache['timestamp'] is not None:
+            elapsed = (datetime.now() - st.session_state.monitor_cache['timestamp']).total_seconds()
+            if elapsed < st.session_state.monitor_cache['cache_duration']:
+                cache_valid = True
     
-    # Auto-refresh toggle
+    # Auto-refresh toggle and manual refresh button
     col1, col2, col3 = st.columns([2, 2, 1])
     with col1:
-        auto_refresh = st.checkbox("🔄 Auto-refresh", value=True)
+        auto_refresh = st.checkbox("🔄 Auto-refresh", value=False, key="monitor_auto_refresh")
     with col2:
-        if st.button("🔄 Refresh Now", use_container_width=True):
+        if st.button("🔄 Refresh Now", use_container_width=True, key="monitor_refresh_btn"):
+            # Clear cache to force refresh
+            st.session_state.monitor_cache['results'] = None
+            st.session_state.monitor_cache['timestamp'] = None
             st.rerun()
+    
+    # Show cache status
+    if cache_valid:
+        cache_age = (datetime.now() - st.session_state.monitor_cache['timestamp']).total_seconds()
+        st.info(f"📅 Monitoring Period: **{monitor_start_date}** to **Today** | 💾 Using cached data (updated {int(cache_age)}s ago)")
+    else:
+        if has_api_key:
+            st.info(f"📅 Monitoring Period: **{monitor_start_date}** to **Today** | 🔴 Live data enabled")
+        else:
+            st.warning(f"📅 Monitoring Period: **{monitor_start_date}** to **Today** | 💾 Using cached backtest results (POLYGON_API_KEY not set for live data)")
     
     st.markdown("---")
     
-    # Load strategies and run backtests
+    # Load strategies
     strategies = load_strategies()
     
     if not strategies:
         st.warning("⚠️ No strategies found. Please run optimization first.")
-    else:
-        # Group strategies by symbol and find best performing one
-        symbol_best_strategies = {}
-        
-        for strategy in strategies:
-            symbol = strategy['symbol']
-            
-            # Skip if already have a strategy for this symbol with better performance
-            if symbol in symbol_best_strategies:
-                existing_return = symbol_best_strategies[symbol].get('backtest_performance', {}).get('total_return', -999)
-                current_return = strategy.get('backtest_performance', {}).get('total_return', -999)
-                if current_return <= existing_return:
-                    continue
-            
-            symbol_best_strategies[symbol] = strategy
-        
-        st.markdown(f"### 🎯 Monitoring {len(symbol_best_strategies)} Symbols")
-        
-        # Run live backtests for each symbol
         monitor_results = []
-        
-        with st.spinner('🔄 Loading strategy data...'):
-            for symbol, strategy in symbol_best_strategies.items():
-                try:
-                    # Load strategy config
-                    with open(strategy['path'], 'r', encoding='utf-8') as f:
-                        strategy_config = json.load(f)
-                    
-                    # Get stored backtest performance from strategy file
-                    backtest_perf = strategy.get('backtest_performance', {})
-                    
-                    # Check if we have existing backtest data
-                    if backtest_perf and 'total_return' in backtest_perf:
-                        # Use cached backtest results from strategy file
-                        total_return = backtest_perf.get('total_return', 0)
-                        num_trades = backtest_perf.get('num_trades', 0)
-                        win_rate = backtest_perf.get('win_rate', 0)
-                        final_value = 10000 * (1 + total_return)
+    else:
+        # Use cached results if available and valid
+        if cache_valid and st.session_state.monitor_cache['results'] is not None:
+            monitor_results = st.session_state.monitor_cache['results']
+            st.markdown(f"### 🎯 Monitoring {len(monitor_results)} Symbols (Cached)")
+        else:
+            # Group strategies by symbol and find best performing one
+            symbol_best_strategies = {}
+            
+            for strategy in strategies:
+                symbol = strategy['symbol']
+                
+                # Skip if already have a strategy for this symbol with better performance
+                if symbol in symbol_best_strategies:
+                    existing_return = symbol_best_strategies[symbol].get('backtest_performance', {}).get('total_return', -999)
+                    current_return = strategy.get('backtest_performance', {}).get('total_return', -999)
+                    if current_return <= existing_return:
+                        continue
+                
+                symbol_best_strategies[symbol] = strategy
+            
+            st.markdown(f"### 🎯 Monitoring {len(symbol_best_strategies)} Symbols")
+            
+            # Run live backtests for each symbol
+            monitor_results = []
+            
+            with st.spinner('🔄 Loading strategy data...'):
+                for symbol, strategy in symbol_best_strategies.items():
+                    try:
+                        # Load strategy config
+                        with open(strategy['path'], 'r', encoding='utf-8') as f:
+                            strategy_config = json.load(f)
                         
-                        # Create a simple equity curve from stored data
-                        # Generate synthetic equity curve based on return
-                        days = (datetime.now() - pd.to_datetime(monitor_start_date)).days
-                        dates = pd.date_range(start=monitor_start_date, periods=days, freq='D')
-                        # Simple linear growth assumption
-                        equity_values = [10000 + (final_value - 10000) * (i / days) for i in range(days)]
-                        equity_curve = pd.Series(equity_values, index=dates)
+                        # Get stored backtest performance from strategy file
+                        backtest_perf = strategy.get('backtest_performance', {})
                         
-                        monitor_results.append({
-                            'symbol': symbol,
-                            'strategy_name': strategy['name'],
-                            'total_return': total_return,
-                            'final_value': final_value,
-                            'num_trades': num_trades,
-                            'win_rate': win_rate,
-                            'equity_curve': equity_curve,
-                            'trades': [],  # No detailed trade history from cache
-                            'is_cached': True
-                        })
-                    else:
-                        # Try to run live backtest if API key is available
-                        import os
-                        if not os.getenv('POLYGON_API_KEY'):
-                            st.warning(f"⚠️ {symbol}: No cached data and POLYGON_API_KEY not set. Skipping live backtest.")
-                            continue
+                        # Check if we have existing backtest data
+                        if backtest_perf and 'total_return' in backtest_perf:
+                            # Use cached backtest results from strategy file
+                            total_return = backtest_perf.get('total_return', 0)
+                            num_trades = backtest_perf.get('num_trades', 0)
+                            win_rate = backtest_perf.get('win_rate', 0)
+                            final_value = 10000 * (1 + total_return)
+                            
+                            # Create a simple equity curve from stored data
+                            # Generate synthetic equity curve based on return
+                            days = (datetime.now() - pd.to_datetime(monitor_start_date)).days
+                            dates = pd.date_range(start=monitor_start_date, periods=days, freq='D')
+                            # Simple linear growth assumption
+                            equity_values = [10000 + (final_value - 10000) * (i / days) for i in range(days)]
+                            equity_curve = pd.Series(equity_values, index=dates)
+                            
+                            monitor_results.append({
+                                'symbol': symbol,
+                                'strategy_name': strategy['name'],
+                                'total_return': total_return,
+                                'final_value': final_value,
+                                'num_trades': num_trades,
+                                'win_rate': win_rate,
+                                'equity_curve': equity_curve,
+                                'trades': [],  # No detailed trade history from cache
+                                'is_cached': True
+                            })
+                        else:
+                            # Try to run live backtest if API key is available
+                            import os
+                            if not os.getenv('POLYGON_API_KEY'):
+                                st.warning(f"⚠️ {symbol}: No cached data and POLYGON_API_KEY not set. Skipping live backtest.")
+                                continue
+                            
+                            # Run backtest from 2025-04-01 to today
+                            backtest = OptionBacktest(initial_capital=10000, use_real_prices=True)
+                            
+                            params = strategy_config.get('params', {})
+                            signal_weights = strategy_config.get('signal_weights', {})
+                            
+                            result = backtest.run_backtest(
+                                symbol=symbol,
+                                start_date=monitor_start_date,
+                                end_date=datetime.now().strftime("%Y-%m-%d"),
+                                strategy='auto',
+                                entry_signal=signal_weights,
+                                profit_target=params.get('profit_target', 5.0),
+                                stop_loss=params.get('stop_loss', -0.5),
+                                max_holding_days=params.get('max_holding_days', 30),
+                                position_size=params.get('position_size', 0.1)
+                            )
+                            
+                            # Calculate metrics
+                            final_value = result.equity_curve[-1] if len(result.equity_curve) > 0 else 10000
+                            total_return = (final_value - 10000) / 10000
+                            num_trades = len(result.trades)
+                            winning_trades = sum(1 for t in result.trades if t.pnl and t.pnl > 0)
+                            win_rate = (winning_trades / num_trades * 100) if num_trades > 0 else 0
+                            
+                            monitor_results.append({
+                                'symbol': symbol,
+                                'strategy_name': strategy['name'],
+                                'total_return': total_return,
+                                'final_value': final_value,
+                                'num_trades': num_trades,
+                                'win_rate': win_rate,
+                                'equity_curve': result.equity_curve,
+                                'trades': result.trades,
+                                'is_cached': False
+                            })
                         
-                        # Run backtest from 2025-04-01 to today
-                        backtest = OptionBacktest(initial_capital=10000, use_real_prices=True)
-                        
-                        params = strategy_config.get('params', {})
-                        signal_weights = strategy_config.get('signal_weights', {})
-                        
-                        result = backtest.run_backtest(
-                            symbol=symbol,
-                            start_date=monitor_start_date,
-                            end_date=datetime.now().strftime("%Y-%m-%d"),
-                            strategy='auto',
-                            entry_signal=signal_weights,
-                            profit_target=params.get('profit_target', 5.0),
-                            stop_loss=params.get('stop_loss', -0.5),
-                            max_holding_days=params.get('max_holding_days', 30),
-                            position_size=params.get('position_size', 0.1)
-                        )
-                        
-                        # Calculate metrics
-                        final_value = result.equity_curve[-1] if len(result.equity_curve) > 0 else 10000
-                        total_return = (final_value - 10000) / 10000
-                        num_trades = len(result.trades)
-                        winning_trades = sum(1 for t in result.trades if t.pnl and t.pnl > 0)
-                        win_rate = (winning_trades / num_trades * 100) if num_trades > 0 else 0
-                        
-                        monitor_results.append({
-                            'symbol': symbol,
-                            'strategy_name': strategy['name'],
-                            'total_return': total_return,
-                            'final_value': final_value,
-                            'num_trades': num_trades,
-                            'win_rate': win_rate,
-                            'equity_curve': result.equity_curve,
-                            'trades': result.trades,
-                            'is_cached': False
-                        })
-                    
-                except Exception as e:
-                    st.error(f"❌ Error loading {symbol}: {str(e)}")
-                    continue
+                    except Exception as e:
+                        st.error(f"❌ Error loading {symbol}: {str(e)}")
+                        continue
+            
+            # Cache the results
+            st.session_state.monitor_cache['results'] = monitor_results
+            st.session_state.monitor_cache['timestamp'] = datetime.now()
         
         # Sort by return (best first)
-        monitor_results.sort(key=lambda x: x['total_return'], reverse=True)
+        if monitor_results:
+            monitor_results.sort(key=lambda x: x['total_return'], reverse=True)
         
         # Display summary metrics
         col1, col2, col3, col4 = st.columns(4)
@@ -1020,38 +1470,53 @@ elif display_page == "📈 Real-time Monitor":
                 """, unsafe_allow_html=True)
             
             with col2:
-                if result['equity_curve']:
-                    # Create equity curve chart
-                    fig, ax = plt.subplots(figsize=(10, 4))
+                # Check if equity_curve exists and is not empty
+                equity_curve = result.get('equity_curve')
+                if equity_curve is not None:
+                    # Convert to Series if it's not already
+                    if isinstance(equity_curve, pd.Series):
+                        equity_series = equity_curve.copy()
+                    else:
+                        equity_series = pd.Series(equity_curve)
                     
-                    # Set dark theme for matplotlib
-                    fig.patch.set_facecolor('#1A1A2E')
-                    ax.set_facecolor('#1A1A2E')
-                    
-                    equity_series = pd.Series(result['equity_curve'])
-                    equity_series.index = pd.to_datetime(equity_series.index)
-                    
-                    line_color = '#38ef7d' if result['total_return'] > 0 else '#ff6b6b'
-                    fill_color = '#38ef7d' if result['total_return'] > 0 else '#ff6b6b'
-                    
-                    ax.plot(equity_series.index, equity_series.values, 
-                           linewidth=2.5, color=line_color)
-                    ax.axhline(y=10000, color='#A100FF', linestyle='--', alpha=0.5, linewidth=1)
-                    ax.fill_between(equity_series.index, 10000, equity_series.values, 
-                                   alpha=0.3, color=fill_color)
-                    
-                    # Style the chart
-                    ax.set_title(f'{result["symbol"]} Equity Curve', fontsize=12, fontweight='bold', color='#EAEAEA')
-                    ax.set_xlabel('Date', fontsize=10, color='#EAEAEA')
-                    ax.set_ylabel('Portfolio Value ($)', fontsize=10, color='#EAEAEA')
-                    ax.tick_params(colors='#EAEAEA')
-                    ax.grid(True, alpha=0.2, color='#A100FF')
-                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
-                    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right', color='#EAEAEA')
-                    plt.tight_layout()
-                    
-                    st.pyplot(fig)
-                    plt.close(fig)
+                    # Check if series is not empty
+                    if len(equity_series) > 0:
+                        # Create equity curve chart
+                        fig, ax = plt.subplots(figsize=(10, 4))
+                        
+                        # Set dark theme for matplotlib
+                        fig.patch.set_facecolor('#1A1A2E')
+                        ax.set_facecolor('#1A1A2E')
+                        
+                        # Ensure index is datetime
+                        if not isinstance(equity_series.index, pd.DatetimeIndex):
+                            equity_series.index = pd.to_datetime(equity_series.index)
+                        
+                        line_color = '#38ef7d' if result['total_return'] > 0 else '#ff6b6b'
+                        fill_color = '#38ef7d' if result['total_return'] > 0 else '#ff6b6b'
+                        
+                        ax.plot(equity_series.index, equity_series.values, 
+                               linewidth=2.5, color=line_color)
+                        ax.axhline(y=10000, color='#A100FF', linestyle='--', alpha=0.5, linewidth=1)
+                        ax.fill_between(equity_series.index, 10000, equity_series.values, 
+                                       alpha=0.3, color=fill_color)
+                        
+                        # Style the chart
+                        ax.set_title(f'{result["symbol"]} Equity Curve', fontsize=12, fontweight='bold', color='#EAEAEA')
+                        ax.set_xlabel('Date', fontsize=10, color='#EAEAEA')
+                        ax.set_ylabel('Portfolio Value ($)', fontsize=10, color='#EAEAEA')
+                        ax.tick_params(colors='#EAEAEA')
+                        ax.grid(True, alpha=0.2, color='#A100FF')
+                        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+                        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right', color='#EAEAEA')
+                        plt.tight_layout()
+                        
+                        st.pyplot(fig)
+                        plt.close(fig)
+                    else:
+                        st.info("No equity curve data available")
+                else:
+                    st.info("No equity curve data available")
             
             # Expandable trade details
             with st.expander(f"📝 View {result['num_trades']} Trades for {result['symbol']}"):
@@ -1061,13 +1526,14 @@ elif display_page == "📈 Real-time Monitor":
                         trades_data.append({
                             '#': i,
                             'Entry': trade.entry_date,
-                            'Exit': trade.exit_date,
-                            'Type': trade.position_type,
+                            'Exit': trade.exit_date if trade.exit_date else '—',
+                            'Type': trade.strategy.upper() if hasattr(trade, 'strategy') else 'N/A',
+                            'Strike': f"${trade.strike:.2f}" if hasattr(trade, 'strike') else 'N/A',
                             'Entry Price': f"${trade.entry_price:.2f}",
-                            'Exit Price': f"${trade.exit_price:.2f}",
-                            'P&L': f"${trade.pnl:+,.2f}",
-                            'Return': f"{trade.pnl_pct:+.2%}",
-                            'Reason': trade.exit_reason
+                            'Exit Price': f"${trade.exit_price:.2f}" if trade.exit_price else '—',
+                            'P&L': f"${trade.pnl:+,.2f}" if trade.pnl is not None else '—',
+                            'Return': f"{trade.pnl_pct:+.2%}" if trade.pnl_pct is not None else '—',
+                            'Status': trade.status.upper() if hasattr(trade, 'status') else 'N/A'
                         })
                     
                     trades_df = pd.DataFrame(trades_data)
@@ -1197,67 +1663,50 @@ elif display_page == "🚀 Strategy Optimization":
                 f"{status_icon} {task.task_name} | {task.status.upper()} | 开始于 {task.start_time.strftime('%Y-%m-%d %H:%M:%S')}",
                 expanded=(task.status == "running")
             ):
-                col1, col2, col3 = st.columns([2, 2, 1])
+                # 紧凑布局 - 使用表格形式
+                info_col1, info_col2, info_col3 = st.columns([2.5, 2.5, 1])
                 
-                with col1:
-                    st.write(f"**Task ID:** {task_id}")
-                    st.write(f"**Status:** {task.status}")
+                with info_col1:
+                    st.markdown(f"**Task ID:** `{task_id}`<br>**Status:** `{task.status.upper()}`", unsafe_allow_html=True)
                 
-                with col2:
-                    st.write(f"**Start Time:** {task.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
-                    if task.end_time:
-                        st.write(f"**End Time:** {task.end_time.strftime('%Y-%m-%d %H:%M:%S')}")
-                    st.write(f"**Run Time:** {task.get_duration():.1f} seconds")
+                with info_col2:
+                    end_time_str = task.end_time.strftime('%Y-%m-%d %H:%M:%S') if task.end_time else "—"
+                    st.markdown(f"**Start:** {task.start_time.strftime('%Y-%m-%d %H:%M:%S')}<br>**End:** {end_time_str}<br>**Run Time:** {task.get_duration():.1f}s", unsafe_allow_html=True)
                 
-                with col3:
+                with info_col3:
                     if task.status == "running":
-                        if st.button("⏹️ Stop Task", key=f"stop_task_{task_id}"):
+                        if st.button("⏹️ Stop", key=f"stop_task_{task_id}", use_container_width=True):
                             task.stop()
                             st.rerun()
                     else:
-                        if st.button("🗑️ Delete", key=f"del_task_{task_id}"):
+                        if st.button("🗑️ Delete", key=f"del_task_{task_id}", use_container_width=True):
                             del st.session_state.tasks[task_id]
                             st.rerun()
                 
-                # 实时日志
-                st.markdown("**📜 Real-time Logs:**")
+                # 实时日志 - 使用可折叠的 expander，不单独占大框
                 logs = task.get_logs()
-                
                 if logs:
-                    # 控制选项
-                    col1, col2, col3 = st.columns([2, 2, 1])
-                    with col1:
-                        show_count = st.selectbox(
-                            "Show logs",
-                            options=[50, 100, 200, 500, "All"],
-                            index=1,  # 默认100
-                            key=f"opt_log_count_{task_id}"
-                        )
-                    with col2:
-                        st.caption(f"📊 Total: {len(logs)} log entries")
-                    with col3:
-                        if len(logs) > 50:
-                            full_log_text = "\n".join(logs)
-                            st.download_button(
-                                "📥",
-                                data=full_log_text,
-                                file_name=f"{task_id}_logs.txt",
-                                mime="text/plain",
-                                key=f"opt_save_logs_{task_id}",
-                                help="Download full logs"
-                            )
-                    
-                    # 显示日志
-                    if show_count == "All":
-                        display_logs = logs
-                    else:
-                        display_logs = logs[-show_count:]
-                    
+                    display_logs = logs[-50:] if len(logs) > 50 else logs
                     log_text = "\n".join(display_logs)
-                    st.code(log_text, language="log")
+                    
+                    with st.expander(f"📜 Logs ({len(display_logs)}/{len(logs)})", expanded=False):
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.caption(f"Showing last {len(display_logs)} entries")
+                        with col2:
+                            if len(logs) > 50:
+                                full_log_text = "\n".join(logs)
+                                st.download_button(
+                                    "📥 Download",
+                                    data=full_log_text,
+                                    file_name=f"{task_id}_logs.txt",
+                                    mime="text/plain",
+                                    key=f"opt_save_logs_{task_id}",
+                                    use_container_width=True
+                                )
+                        st.code(log_text, language="log")
                 else:
-                    # 显示等待信息，但显示任务状态和已运行时间
-                    st.info(f"Waiting for logs to output... (Task {task.status}, running {task.get_duration():.1f}s)")
+                    st.caption(f"⏳ Waiting for logs... ({task.get_duration():.1f}s)")
                 
                 # 自动刷新（运行中的任务始终刷新，无论是否有日志）
                 if task.status == "running":
@@ -1806,27 +2255,50 @@ elif display_page == "📁 Strategy Management":
                     f"{status_icon} {task.task_name} | {task.status.upper()} | Duration: {task.get_duration():.1f}s",
                     expanded=(task.status == "running")
                 ):
-                    col1, col2, col3 = st.columns([2, 2, 1])
+                    # 紧凑布局 - 使用表格形式
+                    info_col1, info_col2, info_col3 = st.columns([2.5, 2.5, 1])
                     
-                    with col1:
-                        st.write(f"**Task ID:** {task_id}")
-                        st.write(f"**Status:** {task.status}")
+                    with info_col1:
+                        st.markdown(f"**Task ID:** `{task_id}`<br>**Status:** `{task.status.upper()}`", unsafe_allow_html=True)
                     
-                    with col2:
-                        st.write(f"**Start Time:** {task.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
-                        if task.end_time:
-                            st.write(f"**End Time:** {task.end_time.strftime('%Y-%m-%d %H:%M:%S')}")
-                        st.write(f"**Duration:** {task.get_duration():.1f} seconds")
+                    with info_col2:
+                        end_time_str = task.end_time.strftime('%Y-%m-%d %H:%M:%S') if task.end_time else "—"
+                        st.markdown(f"**Start:** {task.start_time.strftime('%Y-%m-%d %H:%M:%S')}<br>**End:** {end_time_str}<br>**Duration:** {task.get_duration():.1f}s", unsafe_allow_html=True)
                     
-                    with col3:
+                    with info_col3:
                         if task.status == "running":
-                            if st.button("⏹️ Stop", key=f"stop_custom_{task_id}"):
+                            if st.button("⏹️ Stop", key=f"stop_custom_{task_id}", use_container_width=True):
                                 task.stop()
                                 st.rerun()
                         else:
-                            if st.button("🗑️ Delete", key=f"del_custom_{task_id}"):
+                            if st.button("🗑️ Delete", key=f"del_custom_{task_id}", use_container_width=True):
                                 del st.session_state.tasks[task_id]
                                 st.rerun()
+                    
+                    # 实时日志 - 紧凑显示，不单独占大框（只在非完成状态显示，完成状态在报告后显示）
+                    if task.status != "completed":
+                        logs = task.get_logs()
+                        if logs:
+                            display_logs = logs[-50:] if len(logs) > 50 else logs
+                            log_text = "\n".join(display_logs)
+                            
+                            # 紧凑的日志显示，与任务信息在同一区域
+                            with st.expander(f"📜 Logs ({len(display_logs)}/{len(logs)})", expanded=False):
+                                col1, col2 = st.columns([4, 1])
+                                with col1:
+                                    st.caption(f"Showing last {len(display_logs)} entries")
+                                with col2:
+                                    if len(logs) > 50:
+                                        full_log_text = "\n".join(logs)
+                                        st.download_button(
+                                            "📥 Download",
+                                            data=full_log_text,
+                                            file_name=f"{task_id}_logs.txt",
+                                            mime="text/plain",
+                                            key=f"custom_save_logs_{task_id}",
+                                            use_container_width=True
+                                        )
+                                st.code(log_text, language="log")
                     
                     # 如果任务完成，显示生成的报告
                     if task.status == "completed":
@@ -2092,56 +2564,6 @@ elif display_page == "📁 Strategy Management":
                             if st.button("❌ Close Preview", key=f"close_preview_{task_id}"):
                                 st.session_state[f"show_report_{task_id}"] = False
                                 st.rerun()
-                    
-                    # 显示实时日志
-                    st.markdown("---")
-                    st.markdown("**📄 Real-time Logs:**")
-                    logs = task.get_logs()
-                    
-                    if logs:
-                        # 控制选项
-                        col1, col2, col3 = st.columns([2, 2, 1])
-                        with col1:
-                            show_count = st.selectbox(
-                                "Show logs",
-                                options=[50, 100, 200, 500, "All"],
-                                index=2,  # 默认200
-                                key=f"log_count_{task_id}"
-                            )
-                        with col2:
-                            st.caption(f"📊 Total: {len(logs)} log entries")
-                        with col3:
-                            if len(logs) > 50:
-                                full_log_text = "\n".join(logs)
-                                st.download_button(
-                                    "📥",
-                                    data=full_log_text,
-                                    file_name=f"{task_id}_logs.txt",
-                                    mime="text/plain",
-                                    key=f"save_logs_{task_id}",
-                                    help="Download full logs"
-                                )
-                        
-                        # 显示日志
-                        if show_count == "All":
-                            display_logs = logs
-                        else:
-                            display_logs = logs[-show_count:]
-                        
-                        log_text = "\n".join(display_logs)
-                        st.text_area(
-                            "Logs",
-                            value=log_text,
-                            height=400,
-                            key=f"custom_log_display_{task_id}",
-                            label_visibility="collapsed"
-                        )
-                        
-                        # 任务运行中时显示提示
-                        if task.status == "running":
-                            st.info("🔄 Task is running... Logs auto-refresh every 2 seconds")
-                    else:
-                        st.info("⏳ Waiting for logs to output...")
             
             # 自动刷新逻辑
             if auto_refresh:
