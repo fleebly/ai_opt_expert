@@ -46,20 +46,17 @@ st.markdown("""
     }
     
     /* Top navigation bar - Fixed at top */
-    .top-nav {
-        background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
-        padding: 1rem 2rem;
-        border-bottom: 1px solid rgba(161, 0, 255, 0.2);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    /* Create a fixed navigation container */
+    .main > div:first-child {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
-        width: 100%;
+        background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+        padding: 1rem 2rem;
+        border-bottom: 1px solid rgba(161, 0, 255, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         z-index: 999;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
         backdrop-filter: blur(10px);
     }
     
@@ -466,33 +463,89 @@ class BackgroundTask:
 # Top Navigation Bar
 def render_top_navigation():
     # Get current page from query params or default to home
-    if "page" not in st.query_params:
-        current_page = "home"
+    # st.query_params.get() returns a list, so we need to handle it properly
+    page_param = st.query_params.get("page", [])
+    if page_param:
+        current_page = page_param[0] if isinstance(page_param, list) else page_param
     else:
-        current_page = st.query_params.get("page", ["home"])[0]
+        current_page = "home"
     
-    # Navigation HTML with JavaScript to handle clicks without page reload
-    nav_html = f"""
-    <div class="top-nav">
-        <h1 class="nav-title">📊 QTSP</h1>
-        <div class="nav-links">
-            <button class="nav-link {'active' if current_page == 'home' else ''}" onclick="navigateTo('home')">🏠 Home</button>
-            <button class="nav-link {'active' if current_page == 'monitor' else ''}" onclick="navigateTo('monitor')">📈 Real-time Monitor</button>
-            <button class="nav-link {'active' if current_page == 'optimization' else ''}" onclick="navigateTo('optimization')">🚀 Strategy Optimization</button>
-            <button class="nav-link {'active' if current_page == 'management' else ''}" onclick="navigateTo('management')">📁 Strategy Management</button>
-        </div>
-    </div>
-    <script>
-    function navigateTo(page) {{
-        // Update URL and trigger Streamlit rerun
-        // Streamlit will detect the query param change and rerun
-        const newUrl = window.location.pathname + '?page=' + page;
-        window.location.href = newUrl;
-    }}
-    </script>
-    """
+    # Validate page value
+    valid_pages = ["home", "monitor", "optimization", "management"]
+    if current_page not in valid_pages:
+        current_page = "home"
     
-    st.markdown(nav_html, unsafe_allow_html=True)
+    # Use Streamlit columns to create navigation bar
+    nav_col1, nav_col2 = st.columns([1, 4])
+    
+    with nav_col1:
+        st.markdown('<h1 class="nav-title">📊 QTSP</h1>', unsafe_allow_html=True)
+    
+    with nav_col2:
+        # Create button columns for navigation
+        btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
+        
+        with btn_col1:
+            if st.button("🏠 Home", key="nav_home", use_container_width=True, 
+                       type="primary" if current_page == "home" else "secondary"):
+                st.query_params["page"] = "home"
+                st.rerun()
+        
+        with btn_col2:
+            if st.button("📈 Real-time Monitor", key="nav_monitor", use_container_width=True,
+                       type="primary" if current_page == "monitor" else "secondary"):
+                st.query_params["page"] = "monitor"
+                st.rerun()
+        
+        with btn_col3:
+            if st.button("🚀 Strategy Optimization", key="nav_optimization", use_container_width=True,
+                       type="primary" if current_page == "optimization" else "secondary"):
+                st.query_params["page"] = "optimization"
+                st.rerun()
+        
+        with btn_col4:
+            if st.button("📁 Strategy Management", key="nav_management", use_container_width=True,
+                       type="primary" if current_page == "management" else "secondary"):
+                st.query_params["page"] = "management"
+                st.rerun()
+    
+    # Add custom CSS for navigation buttons to match the design
+    st.markdown("""
+    <style>
+    /* Navigation button styling */
+    div[data-testid="column"] button[key="nav_home"],
+    div[data-testid="column"] button[key="nav_monitor"],
+    div[data-testid="column"] button[key="nav_optimization"],
+    div[data-testid="column"] button[key="nav_management"] {
+        background: transparent !important;
+        border: 1px solid rgba(161, 0, 255, 0.3) !important;
+        color: #B0B0C0 !important;
+        font-weight: 500 !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
+        height: 2.5rem !important;
+    }
+    
+    div[data-testid="column"] button[key="nav_home"]:hover,
+    div[data-testid="column"] button[key="nav_monitor"]:hover,
+    div[data-testid="column"] button[key="nav_optimization"]:hover,
+    div[data-testid="column"] button[key="nav_management"]:hover {
+        background: rgba(161, 0, 255, 0.1) !important;
+        color: #FFFFFF !important;
+        border-color: rgba(161, 0, 255, 0.5) !important;
+    }
+    
+    /* Active button styling - primary type */
+    div[data-testid="column"] button[key="nav_home"][class*="primary"],
+    div[data-testid="column"] button[key="nav_monitor"][class*="primary"],
+    div[data-testid="column"] button[key="nav_optimization"][class*="primary"],
+    div[data-testid="column"] button[key="nav_management"][class*="primary"] {
+        background: linear-gradient(135deg, #A100FF 0%, #632BFF 100%) !important;
+        color: #FFFFFF !important;
+        border-color: transparent !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     return current_page
 
@@ -540,6 +593,60 @@ def load_strategies():
     
     return sorted(strategies, key=lambda x: x['modified'], reverse=True)
 
+def get_latest_strategy(symbol):
+    """获取指定标的的最新策略"""
+    strategies_dir = Path("strategies")
+    if not strategies_dir.exists():
+        return None
+    
+    pattern = f"{symbol}_*.json"
+    found_files = list(strategies_dir.glob(pattern))
+    
+    if not found_files:
+        return None
+    
+    # 按修改时间排序，获取最新的
+    found_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+    latest_file = found_files[0]
+    
+    try:
+        with open(latest_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        return None
+
+def delete_strategy(filepath):
+    """删除策略文件"""
+    try:
+        path = Path(filepath)
+        if path.exists():
+            path.unlink()
+            return True
+        return False
+    except Exception as e:
+        return False
+
+def save_strategy(symbol, strategy_data):
+    """保存策略文件"""
+    strategies_dir = Path("strategies")
+    strategies_dir.mkdir(exist_ok=True)
+    
+    # 生成带时间戳的文件名
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{symbol}_strategy_{timestamp}.json"
+    filepath = strategies_dir / filename
+    
+    # 确保 metadata 中有 symbol
+    if 'metadata' not in strategy_data:
+        strategy_data['metadata'] = {}
+    strategy_data['metadata']['symbol'] = symbol
+    strategy_data['metadata']['generated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(strategy_data, f, indent=2, ensure_ascii=False)
+    
+    return filename
+
 strategies = load_strategies()
 symbols = list(set([s['symbol'] for s in strategies]))
 st.sidebar.metric("Total Strategies", len(strategies))
@@ -558,7 +665,13 @@ page_mapping = {
 }
 
 # Get the display name for the current page
+# Ensure page is a valid key
+if page not in page_mapping:
+    page = "home"
 display_page = page_mapping.get(page, "🏠 Home")
+
+# Debug: Uncomment to see current page in sidebar (for testing)
+# st.sidebar.write(f"🔍 Debug: page='{page}', display_page='{display_page}'")
 
 # ==================== Home ====================
 if display_page == "🏠 Home":
