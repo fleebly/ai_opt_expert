@@ -32,16 +32,66 @@ st.set_page_config(
     page_title="量化交易策略管理平台",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"  # Collapse sidebar by default since we're moving navigation to top
 )
 
-# 自定义 CSS
+# 自定义 CSS - Updated to match RockAlpha design with top navigation
 st.markdown("""
 <style>
-    /* RockAlpha-inspired dark theme */
+    /* RockAlpha-inspired dark theme with purple gradients */
     body {
-        background-color: #0A0A0A;
+        background: linear-gradient(135deg, #0A0A12 0%, #0F0F1A 100%);
         color: #EAEAEA;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    
+    /* Top navigation bar */
+    .top-nav {
+        background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+        padding: 1rem 2rem;
+        border-bottom: 1px solid rgba(161, 0, 255, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        backdrop-filter: blur(10px);
+    }
+    
+    .nav-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        background: linear-gradient(to right, #A100FF, #632BFF);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+    }
+    
+    .nav-links {
+        display: flex;
+        gap: 1.5rem;
+    }
+    
+    .nav-link {
+        color: #B0B0C0;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+    
+    .nav-link:hover {
+        color: #FFFFFF;
+        background: rgba(161, 0, 255, 0.1);
+    }
+    
+    .nav-link.active {
+        color: #FFFFFF;
+        background: linear-gradient(135deg, #A100FF 0%, #632BFF 100%);
     }
     
     /* Main header with RockAlpha gradient */
@@ -51,7 +101,7 @@ st.markdown("""
         background: linear-gradient(to right, #A100FF, #632BFF);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 2rem;
+        margin: 2rem 0;
         text-align: center;
     }
     
@@ -94,29 +144,15 @@ st.markdown("""
         color: #dc3545;
     }
     
-    /* Sidebar styling */
+    /* Sidebar styling - hidden since we moved navigation to top */
     [data-testid='stSidebar'] {
-        background: linear-gradient(135deg, #0F0F1A 0%, #141428 100%);
-        border-right: 1px solid rgba(161, 0, 255, 0.1);
-    }
-    
-    /* Sidebar navigation items */
-    [data-testid='stSidebar'] button {
-        background: transparent;
-        color: #EAEAEA !important;
-        border: 1px solid rgba(161, 0, 255, 0.3);
-        border-radius: 8px;
-        margin: 0.25rem 0;
-    }
-    
-    [data-testid='stSidebar'] button:hover {
-        background: linear-gradient(135deg, #A100FF 0%, #632BFF 100%);
-        border: 1px solid #A100FF;
+        display: none;
     }
     
     /* Main content area */
     .main {
-        background-color: #0A0A0A;
+        background: linear-gradient(135deg, #0A0A12 0%, #0F0F1A 100%);
+        padding-top: 1rem;
     }
     
     /* Dataframe styling */
@@ -133,6 +169,7 @@ st.markdown("""
         color: white !important;
         border-radius: 8px !important;
         font-weight: 500 !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
     }
     
     button:hover {
@@ -147,6 +184,7 @@ st.markdown("""
         border: 1px solid rgba(161, 0, 255, 0.3) !important;
         border-radius: 8px !important;
         color: #EAEAEA !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
     }
     
     input:focus, select:focus, textarea:focus {
@@ -174,6 +212,15 @@ st.markdown("""
     [data-testid='stExpander'] div:first-child {
         background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
         border-radius: 8px 8px 0 0;
+    }
+    
+    /* Footer */
+    footer {
+        background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+        padding: 1.5rem;
+        border-top: 1px solid rgba(161, 0, 255, 0.2);
+        margin-top: 2rem;
+        text-align: center;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -354,192 +401,48 @@ class BackgroundTask:
             self.end_time = datetime.now()
             self.output_queue.put("⚠️ 任务已手动停止")
 
-# 工具函数
-def generate_interactive_report(symbol, strategy_file, start_date, end_date, initial_capital=10000.0):
-    """
-    为单个标的生成交互式报告，包含equity curve和交易标注
+# Top Navigation Bar
+def render_top_navigation():
+    # Get current page from query params or default to home
+    current_page = st.query_params.get("page", ["home"])[0]
     
-    Args:
-        symbol: 标的代码
-        strategy_file: 策略JSON文件路径
-        start_date: 开始日期
-        end_date: 结束日期
-        initial_capital: 初始资金
-        
-    Returns:
-        tuple: (equity_df, trades_list, metrics_dict, fig)
-    """
-    try:
-        # 创建素材文件夹
-        assets_dir = Path("report_assets")
-        assets_dir.mkdir(exist_ok=True)
-        
-        # 加载策略
-        with open(strategy_file, 'r', encoding='utf-8') as f:
-            strategy_config = json.load(f)
-        
-        # 初始化回测引擎（正确的方式）
-        backtest = OptionBacktest(
-            initial_capital=initial_capital,
-            use_real_prices=True
-        )
-        
-        # 获取参数
-        params = strategy_config.get('params', {})
-        signal_weights = strategy_config['signal_weights']
-        
-        # 运行回测
-        result = backtest.run_backtest(
-            symbol=symbol,
-            start_date=start_date,
-            end_date=end_date,
-            strategy='auto',
-            entry_signal=signal_weights,
-            profit_target=params.get('profit_target', 5.0),
-            stop_loss=params.get('stop_loss', -0.5),
-            max_holding_days=params.get('max_holding_days', 30),
-            position_size=params.get('position_size', 0.1)
-        )
-        
-        # 获取equity curve和trades (result是BacktestResult对象)
-        equity_curve = pd.Series(result.equity_curve)
-        equity_curve.index = pd.to_datetime(equity_curve.index)
-        trades = result.trades
-        
-        # 绘制equity curve with trade markers
-        fig, ax = plt.subplots(figsize=(14, 7))
-        
-        # 绘制资金曲线
-        ax.plot(equity_curve.index, equity_curve.values,
-                linewidth=2.5, color='#2E86AB', label='Portfolio Value', zorder=1)
-        ax.axhline(y=initial_capital, color='gray',
-                   linestyle='--', alpha=0.6, linewidth=1.5, label='Initial Capital')
-        ax.fill_between(equity_curve.index, initial_capital,
-                         equity_curve.values, alpha=0.2, color='#2E86AB')
-        
-        # 标注交易入场和离场点
-        if trades:
-            for i, trade in enumerate(trades):
-                try:
-                    entry_date = pd.to_datetime(trade.entry_date)
-                    exit_date = pd.to_datetime(trade.exit_date)
-                    
-                    # 获取对应时间点的资金值
-                    entry_value = equity_curve.asof(entry_date) if entry_date not in equity_curve.index else equity_curve.loc[entry_date]
-                    exit_value = equity_curve.asof(exit_date) if exit_date not in equity_curve.index else equity_curve.loc[exit_date]
-                    
-                    # 入场标注（绿色向上三角）
-                    ax.scatter(entry_date, entry_value,
-                               marker='^', s=150, c='green',
-                               edgecolors='darkgreen', linewidths=1.5,
-                               zorder=5, alpha=0.8)
-                    
-                    # 离场标注（红色向下三角）
-                    ax.scatter(exit_date, exit_value,
-                               marker='v', s=150, c='red',
-                               edgecolors='darkred', linewidths=1.5,
-                               zorder=5, alpha=0.8)
-                    
-                    # 标注收益
-                    pnl = trade.pnl
-                    pnl_pct = trade.pnl_pct
-                    
-                    # 在离场点上方/下方显示收益
-                    y_offset = (equity_curve.max() - equity_curve.min()) * 0.03
-                    if pnl > 0:
-                        text_y = exit_value + y_offset
-                        color = 'green'
-                        va = 'bottom'
-                    else:
-                        text_y = exit_value - y_offset
-                        color = 'red'
-                        va = 'top'
-                    
-                    # 添加文本标注
-                    ax.annotate(
-                        f'#{i+1}\n${pnl:+,.0f}\n({pnl_pct:+.1%})',
-                        xy=(exit_date, exit_value),
-                        xytext=(exit_date, text_y),
-                        fontsize=8,
-                        fontweight='bold',
-                        color=color,
-                        ha='center',
-                        va=va,
-                        bbox=dict(boxstyle='round,pad=0.4',
-                                facecolor='white',
-                                edgecolor=color,
-                                alpha=0.9,
-                                linewidth=1.2),
-                        zorder=10
-                    )
-                    
-                    # 连线（从入场到离场）
-                    line_color = 'green' if pnl > 0 else 'red'
-                    ax.plot([entry_date, exit_date], [entry_value, exit_value],
-                           color=line_color, linestyle=':', linewidth=1.2,
-                           alpha=0.5, zorder=2)
-                    
-                except Exception as e:
-                    continue
-        
-        ax.set_title(f'{symbol} - Portfolio Equity Curve with Trade Markers',
-                     fontsize=16, fontweight='bold', pad=20)
-        ax.set_xlabel('Date', fontsize=12, fontweight='bold')
-        ax.set_ylabel('Portfolio Value ($)', fontsize=12, fontweight='bold')
-        ax.legend(loc='upper left', fontsize=10)
-        ax.grid(True, alpha=0.3, linestyle='--')
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-        ax.xaxis.set_major_locator(mdates.MonthLocator())
-        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
-        
-        # 添加统计信息
-        final_value = equity_curve.iloc[-1]
-        total_return = (final_value - initial_capital) / initial_capital
-        total_pnl = sum([t.pnl for t in trades]) if trades else 0
-        
-        textstr = f'Initial: ${initial_capital:,.0f}\n'
-        textstr += f'Final: ${final_value:,.0f}\n'
-        textstr += f'Return: {total_return:+.2%}\n'
-        textstr += f'Total P&L: ${total_pnl:+,.0f}'
-        
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.95, pad=0.6)
-        ax.text(0.02, 0.98, textstr, transform=ax.transAxes,
-                fontsize=11, verticalalignment='top', bbox=props,
-                fontweight='bold')
-        
-        # 添加图例说明
-        legend_text = '△ Entry (入场)  ▽ Exit (离场)'
-        ax.text(0.98, 0.02, legend_text, transform=ax.transAxes,
-                fontsize=9, ha='right', va='bottom',
-                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
-        
-        plt.tight_layout()
-        
-        # 保存图表到素材文件夹
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        chart_path = assets_dir / f"{symbol}_equity_curve_{timestamp}.png"
-        fig.savefig(chart_path, dpi=100, bbox_inches='tight')
-        
-        # 准备指标数据
-        metrics = {
-            'total_return': total_return,
-            'final_value': final_value,
-            'total_pnl': total_pnl,
-            'num_trades': len(trades),
-            'sharpe_ratio': result.sharpe_ratio,
-            'max_drawdown': result.max_drawdown,
-            'win_rate': result.win_rate
-        }
-        
-        return equity_curve, trades, metrics, fig
-        
-    except Exception as e:
-        import traceback
-        error_detail = traceback.format_exc()
-        st.error(f"生成报告失败: {e}\n\n{error_detail}")
-        return None, None, None, None
+    # Navigation HTML
+    nav_html = """
+    <div class="top-nav">
+        <h1 class="nav-title">📊 QTSP</h1>
+        <div class="nav-links">
+            <a href="?page=home" class="nav-link {}">🏠 Home</a>
+            <a href="?page=monitor" class="nav-link {}">📈 Real-time Monitor</a>
+            <a href="?page=optimization" class="nav-link {}">🚀 Strategy Optimization</a>
+            <a href="?page=management" class="nav-link {}">📁 Strategy Management</a>
+        </div>
+    </div>
+    """.format(
+        "active" if current_page == "home" else "",
+        "active" if current_page == "monitor" else "",
+        "active" if current_page == "optimization" else "",
+        "active" if current_page == "management" else ""
+    )
+    
+    st.markdown(nav_html, unsafe_allow_html=True)
+    
+    return current_page
 
-@st.cache_data(ttl=60)  # Cache for 60 seconds
+# Render top navigation and get current page
+page = render_top_navigation()
+
+# Sidebar navigation - Hidden since we moved to top
+# st.sidebar.markdown("# 📊 Navigation Menu")
+# page = st.sidebar.radio(
+#     "Select Function",
+#     ["🏠 Home", "📈 Real-time Monitor", "🚀 Strategy Optimization", "📁 Strategy Management"],
+#     label_visibility="collapsed"
+# )
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📌 Quick Info")
+
+# Display strategy statistics
 def load_strategies():
     """加载所有策略文件"""
     strategies_dir = Path("strategies")
@@ -569,108 +472,6 @@ def load_strategies():
     
     return sorted(strategies, key=lambda x: x['modified'], reverse=True)
 
-
-def get_latest_strategy(symbol):
-    """获取指定标的的最新策略"""
-    strategies_dir = Path("strategies")
-    pattern = f"{symbol}_*.json"
-    files = list(strategies_dir.glob(pattern))
-    
-    if not files:
-        return None
-    
-    files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
-    
-    try:
-        with open(files[0], 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except:
-        return None
-
-
-def save_strategy(symbol, strategy_data):
-    """保存策略到文件"""
-    strategies_dir = Path("strategies")
-    strategies_dir.mkdir(exist_ok=True)
-    
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = strategies_dir / f"{symbol}_ST_{timestamp}.json"
-    
-    with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(strategy_data, f, indent=2, ensure_ascii=False)
-    
-    return filename
-
-
-def delete_strategy(filepath):
-    """删除策略文件"""
-    try:
-        Path(filepath).unlink()
-        return True
-    except Exception as e:
-        st.error(f"删除失败: {e}")
-        return False
-
-
-def run_optimization(symbol, start_date, end_date, max_iter, threshold):
-    """运行策略优化"""
-    cmd = [
-        sys.executable,
-        "run_iterative_optimization.py",
-        "--symbol", symbol,
-        "--start", start_date,
-        "--end", end_date,
-        "--max-iter", str(max_iter),
-        "--threshold", str(threshold)
-    ]
-    
-    try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=600  # 10分钟超时
-        )
-        return result.returncode == 0, result.stdout, result.stderr
-    except subprocess.TimeoutExpired:
-        return False, "", "优化超时（超过10分钟）"
-    except Exception as e:
-        return False, "", str(e)
-
-
-def run_scanner(symbols, start_date, end_date):
-    """运行策略扫描"""
-    # 临时修改 strategy_scanner.py 的 SYMBOLS
-    try:
-        # 直接调用 Python 代码
-        from strategy_scanner import StrategyScanner
-        
-        scanner = StrategyScanner(strategy_dir="strategies")
-        df_results = scanner.run_scan(
-            symbols=symbols,
-            start_date=start_date,
-            end_date=end_date,
-            output_csv="scan_results.csv",
-            output_html="scan_report.html"
-        )
-        
-        return True, df_results
-    except Exception as e:
-        return False, str(e)
-
-
-# Sidebar navigation
-st.sidebar.markdown("# 📊 Navigation Menu")
-page = st.sidebar.radio(
-    "Select Function",
-    ["🏠 Home", "📈 Real-time Monitor", "🚀 Strategy Optimization", "📁 Strategy Management"],
-    label_visibility="collapsed"
-)
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 📌 Quick Info")
-
-# Display strategy statistics
 strategies = load_strategies()
 symbols = list(set([s['symbol'] for s in strategies]))
 st.sidebar.metric("Total Strategies", len(strategies))
@@ -680,8 +481,19 @@ if strategies:
     latest = strategies[0]
     st.sidebar.info(f"**Latest Update**\n\n{latest['symbol']} - {latest['name']}\n\n{latest['modified']}")
 
+# Map page names to display names
+page_mapping = {
+    "home": "🏠 Home",
+    "monitor": "📈 Real-time Monitor",
+    "optimization": "🚀 Strategy Optimization",
+    "management": "📁 Strategy Management"
+}
+
+# Get the display name for the current page
+display_page = page_mapping.get(page, "🏠 Home")
+
 # ==================== Home ====================
-if page == "🏠 Home":
+if display_page == "🏠 Home":
     st.markdown('<h1 class="main-header">📊 QTSP - Quantitative Trading Strategy Platform</h1>', unsafe_allow_html=True)
     
     st.markdown("""
@@ -754,19 +566,22 @@ if page == "🏠 Home":
     
     with col1:
         if st.button("🚀 Start Optimization", use_container_width=True):
-            st.switch_page = "🚀 Strategy Optimization"
+            st.query_params["page"] = "optimization"
+            st.rerun()
     
     with col2:
         if st.button("🔍 Start Scanning", use_container_width=True):
-            st.switch_page = "🔍 Strategy Scanning"
+            st.query_params["page"] = "monitor"
+            st.rerun()
     
     with col3:
         if st.button("📁 Manage Strategies", use_container_width=True):
-            st.switch_page = "📁 Strategy Management"
+            st.query_params["page"] = "management"
+            st.rerun()
 
 
 # ==================== Real-time Monitor ====================
-elif page == "📈 Real-time Monitor":
+elif display_page == "📈 Real-time Monitor":
     st.markdown('<h1 class="main-header">📈 Real-time Strategy Monitor</h1>', unsafe_allow_html=True)
     
     # Add custom CSS for the monitoring dashboard
@@ -1120,7 +935,7 @@ elif page == "📈 Real-time Monitor":
 
 
 # ==================== 策略优化 ====================
-elif page == "🚀 Strategy Optimization":
+elif display_page == "🚀 Strategy Optimization":
     st.markdown('<h1 class="main-header">🚀 Strategy Optimization</h1>', unsafe_allow_html=True)
     
     st.markdown("""
