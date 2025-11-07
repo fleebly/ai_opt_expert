@@ -14,25 +14,24 @@ import pandas as pd
 import json
 import os
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 import subprocess
 import sys
 import threading
 import queue
 from io import StringIO
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
+import plotly.graph_objects as go
+import plotly.express as px
 from backtest_engine import OptionBacktest
+from monitor_cache import MonitorCache
 
 # 页面配置
 st.set_page_config(
     page_title="量化交易策略管理平台",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="collapsed"  # Collapse sidebar by default since we're moving navigation to top
+    initial_sidebar_state="expanded"  # Show sidebar for navigation
 )
 
 # 自定义 CSS - Updated to match RockAlpha design with top navigation
@@ -66,30 +65,29 @@ st.markdown("""
         background: #FFFFFF !important;
     }
     
-    /* Block container */
+    /* Block container - optimized layout */
     .main .block-container {
         background: #FFFFFF !important;
+        padding-top: 2rem !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
     }
     
-    /* Top navigation bar - Fixed at top */
-    /* Create a fixed navigation container */
+    /* Reduce main content left margin when sidebar is visible */
     .main > div:first-child {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background: #FFFFFF !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-        padding: 1rem 2rem;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        z-index: 999;
+        margin-left: 0 !important;
     }
     
-    /* Add padding to body to account for fixed nav (no Streamlit header) */
-    .main .block-container {
-        padding-top: 6rem !important;
+    /* Adjust main content area to use more space */
+    [data-testid="stAppViewContainer"] > div:first-child {
+        padding-left: 0 !important;
+    }
+    
+    /* Reduce spacing between sidebar and main content */
+    [data-testid="stAppViewContainer"] {
+        gap: 0 !important;
     }
     
     /* Adjust top padding since Streamlit header is hidden */
@@ -246,6 +244,86 @@ st.markdown("""
         color: #1F2937 !important;
     }
     
+    /* Radio group container */
+    [role="radiogroup"] {
+        background: #FFFFFF !important;
+    }
+    
+    [role="radiogroup"] > div {
+        background: #FFFFFF !important;
+    }
+    
+    /* Radio button circle indicators */
+    [data-baseweb="radio"] > div {
+        background: #FFFFFF !important;
+        border-color: rgba(99, 102, 241, 0.3) !important;
+    }
+    
+    [data-baseweb="radio"] input:checked + div {
+        background: #FFFFFF !important;
+        border-color: #6366F1 !important;
+    }
+    
+    /* Radio button inner circle (selected indicator) - change from black to purple */
+    [data-baseweb="radio"] input:checked + div::after {
+        background: #6366F1 !important;
+        background-color: #6366F1 !important;
+    }
+    
+    /* Unselected radio button inner circle - make it light gray instead of black */
+    [data-baseweb="radio"] input:not(:checked) + div::after {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    
+    /* Sidebar radio buttons - more specific styling */
+    [data-testid="stSidebar"] [data-baseweb="radio"] > div {
+        border-color: rgba(99, 102, 241, 0.3) !important;
+    }
+    
+    [data-testid="stSidebar"] [data-baseweb="radio"] input:checked + div {
+        border-color: #6366F1 !important;
+    }
+    
+    [data-testid="stSidebar"] [data-baseweb="radio"] input:checked + div::after {
+        background: #6366F1 !important;
+        background-color: #6366F1 !important;
+    }
+    
+    /* Ensure all radio button indicators use purple theme */
+    [data-baseweb="radio"] input[type="radio"]:checked + div::before,
+    [data-baseweb="radio"] input[type="radio"]:checked + div::after {
+        background: #6366F1 !important;
+        background-color: #6366F1 !important;
+    }
+    
+    /* Override any black/dark colors in radio buttons - use more compatible selectors */
+    [data-baseweb="radio"] input[type="radio"]:checked + div[style*="background"] {
+        background: #6366F1 !important;
+        background-color: #6366F1 !important;
+    }
+    
+    /* Force purple color for all radio button inner circles */
+    [data-baseweb="radio"] > div > div,
+    [data-baseweb="radio"] > div > div::after,
+    [data-baseweb="radio"] > div > div::before {
+        background-color: transparent !important;
+    }
+    
+    [data-baseweb="radio"] input:checked ~ div > div,
+    [data-baseweb="radio"] input:checked + div > div,
+    [data-baseweb="radio"] input:checked + div::after {
+        background: #6366F1 !important;
+        background-color: #6366F1 !important;
+    }
+    
+    /* Sidebar specific - ensure purple indicators */
+    section[data-testid="stSidebar"] [data-baseweb="radio"] input:checked + div::after,
+    section[data-testid="stSidebar"] [data-baseweb="radio"] input:checked + div::before {
+        background: #6366F1 !important;
+        background-color: #6366F1 !important;
+    }
+    
     /* Slider styling */
     [data-baseweb="slider"] {
         background: #FFFFFF !important;
@@ -260,29 +338,226 @@ st.markdown("""
         background: #7C3AED !important;
     }
     
-    /* Date input styling */
+    /* Date input styling - match white theme */
     [data-baseweb="datepicker"] {
         background: #FFFFFF !important;
-        border-color: rgba(0, 0, 0, 0.2) !important;
+        border: 1px solid rgba(0, 0, 0, 0.2) !important;
+        border-radius: 8px !important;
+        color: #1F2937 !important;
+    }
+    
+    [data-baseweb="datepicker"] input {
+        background: #FFFFFF !important;
+        color: #1F2937 !important;
+        border: none !important;
+    }
+    
+    [data-baseweb="datepicker"] input::placeholder {
+        color: #9CA3AF !important;
     }
     
     [data-baseweb="calendar"] {
         background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
     }
     
-    [data-baseweb="calendar"] button {
+    /* Calendar root container - 强制白色 */
+    [data-baseweb="calendar"] > div {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    /* 所有日历子元素 - 强制白色或透明 */
+    [data-baseweb="calendar"] div,
+    [data-baseweb="calendar"] > div > div,
+    [data-baseweb="calendar"] div div,
+    [data-baseweb="calendar"] span,
+    [data-baseweb="calendar"] > * {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    /* 确保没有任何元素使用黑色背景 */
+    [data-baseweb="calendar"] *,
+    [data-baseweb="calendar"] *::before,
+    [data-baseweb="calendar"] *::after {
+        background: transparent !important;
+        background-color: transparent !important;
+        background-image: none !important;
+    }
+    
+    /* 但保持主容器白色 */
+    [data-baseweb="calendar"],
+    [data-baseweb="calendar"] > div {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    [data-baseweb="calendar"] [role="presentation"] {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    /* 日历网格布局元素 */
+    [data-baseweb="calendar"] [class*="Grid"],
+    [data-baseweb="calendar"] [class*="grid"] {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    /* Calendar header area */
+    [data-baseweb="calendar-header"] {
+        background: #FFFFFF !important;
+    }
+    
+    [data-baseweb="calendar-header"] * {
+        background: transparent !important;
         color: #1F2937 !important;
     }
     
-    [data-baseweb="calendar"] button:hover {
-        background: #F9FAFB !important;
+    /* Calendar month container */
+    [data-baseweb="month-container"] {
+        background: #FFFFFF !important;
     }
+    
+    /* Calendar week days header */
+    [data-baseweb="week"] {
+        background: #FFFFFF !important;
+    }
+    
+    /* Calendar day cells and containers */
+    [data-baseweb="calendar"] [role="row"] {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    [data-baseweb="calendar"] [role="gridcell"] {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    [data-baseweb="calendar"] [role="gridcell"] > div {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    
+    [data-baseweb="calendar"] [role="gridcell"] * {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    
+    /* Calendar buttons - day numbers */
+    [data-baseweb="calendar"] button {
+        color: #1F2937 !important;
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    
+    [data-baseweb="calendar"] button * {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    
+    [data-baseweb="calendar"] button:hover {
+        background: #F3F4F6 !important;
+        background-color: #F3F4F6 !important;
+    }
+    
+    [data-baseweb="calendar"] button[aria-selected="true"] {
+        background: #6366F1 !important;
+        background-color: #6366F1 !important;
+        color: #FFFFFF !important;
+    }
+    
+    [data-baseweb="calendar"] button[aria-label*="selected"] {
+        background: #6366F1 !important;
+        background-color: #6366F1 !important;
+        color: #FFFFFF !important;
+    }
+    
+    /* 禁用按钮和无效日期 */
+    [data-baseweb="calendar"] button:disabled,
+    [data-baseweb="calendar"] button[aria-disabled="true"] {
+        background: transparent !important;
+        background-color: transparent !important;
+        opacity: 0.4 !important;
+    }
+    
+    /* Calendar navigation buttons (prev/next month) */
+    [data-baseweb="calendar-header"] button {
+        background: #FFFFFF !important;
+        color: #1F2937 !important;
+    }
+    
+    [data-baseweb="calendar-header"] button:hover {
+        background: #F3F4F6 !important;
+    }
+    
+    /* FINAL OVERRIDE - 彻底清除任何深色/黑色背景 */
+    [data-baseweb="calendar"],
+    [data-baseweb="calendar"] *,
+    [data-baseweb="calendar"]::before,
+    [data-baseweb="calendar"]::after,
+    [data-baseweb="calendar"] *::before,
+    [data-baseweb="calendar"] *::after {
+        background-image: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* 确保主容器和关键元素是白色 */
+    [data-baseweb="calendar"],
+    [data-baseweb="calendar"] > div,
+    [data-baseweb="calendar-header"],
+    [data-baseweb="month-container"],
+    [data-baseweb="week"],
+    [data-baseweb="calendar"] [role="row"],
+    [data-baseweb="calendar"] [role="gridcell"] {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    /* 所有其他元素透明 */
+    [data-baseweb="calendar"] button,
+    [data-baseweb="calendar"] span,
+    [data-baseweb="calendar"] div div {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    
+    /* 选中的日期和按钮例外 */
+    [data-baseweb="calendar"] button[aria-selected="true"],
+    [data-baseweb="calendar"] button[aria-selected="true"] * {
+        background: #6366F1 !important;
+        background-color: #6366F1 !important;
+    }
+    
     
     /* File uploader styling */
     [data-testid='stFileUploader'] {
         background: #FFFFFF !important;
         border: 1px solid rgba(0, 0, 0, 0.1) !important;
         border-radius: 10px !important;
+    }
+    
+    [data-testid='stFileUploader'] > div {
+        background: #FFFFFF !important;
+    }
+    
+    [data-testid='stFileUploader'] section {
+        background: #FFFFFF !important;
+        border-color: rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    [data-testid='stFileUploader'] * {
+        background: transparent !important;
+    }
+    
+    [data-testid='stFileUploader'] button {
+        background: #FFFFFF !important;
+        color: #1F2937 !important;
+        border-color: rgba(0, 0, 0, 0.2) !important;
     }
     
     /* Text area styling */
@@ -345,13 +620,36 @@ st.markdown("""
         color: #1F2937 !important;
     }
     
-    /* Code block styling */
+    /* Code block styling - white background for logs */
     [data-testid='stCodeBlock'] {
-        background: #F9FAFB !important;
-        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        background: #FFFFFF !important;
+        border: none !important;
+    }
+    
+    /* Override pre tag background inside code blocks */
+    [data-testid='stCodeBlock'] pre {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        color: #1F2937 !important;
+        border: none !important;
     }
     
     [data-testid='stCodeBlock'] code {
+        background: transparent !important;
+        background-color: transparent !important;
+        color: #1F2937 !important;
+    }
+    
+    /* Override any dark theme styles for code blocks */
+    pre {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        color: #1F2937 !important;
+    }
+    
+    pre code {
+        background: transparent !important;
+        background-color: transparent !important;
         color: #1F2937 !important;
     }
     
@@ -426,43 +724,136 @@ st.markdown("""
         display: none !important;
     }
     
-    /* Sidebar styling - hidden since we moved navigation to top */
-    [data-testid='stSidebar'] {
-        display: none;
+    /* Sidebar styling - white background, but allow collapse/expand */
+    section[data-testid='stSidebar'],
+    [data-testid='stSidebar'],
+    div[data-testid='stSidebar'],
+    aside[data-testid='stSidebar'],
+    [class*="css-"] section[data-testid='stSidebar'] {
+        background: #FFFFFF !important;
+        /* Remove forced display/visibility to allow collapse */
+        /* display: block !important; */
+        /* visibility: visible !important; */
+        /* Allow Streamlit to control width for collapse */
+        /* width: 16rem !important; */
+        /* min-width: 16rem !important; */
+        /* max-width: 16rem !important; */
+        position: relative !important;
+        z-index: 100 !important;
+        /* Remove forced transform to allow collapse animation */
+        /* transform: translateX(0) !important; */
+        /* opacity: 1 !important; */
+    }
+    
+    /* When sidebar is expanded, set width */
+    section[data-testid='stSidebar']:not([aria-hidden="true"]) {
+        width: 16rem !important;
+        min-width: 16rem !important;
+        max-width: 16rem !important;
+    }
+    
+    [data-testid='stSidebar'] > div,
+    [data-testid='stSidebar'] > section,
+    [data-testid='stSidebar'] > div:first-child {
+        background: #FFFFFF !important;
+        /* Allow Streamlit to control display */
+        /* display: block !important; */
+        /* visibility: visible !important; */
+        width: 100% !important;
+    }
+    
+    [data-testid='stSidebar'] * {
+        color: #1F2937 !important;
+    }
+    
+    /* Remove override rules that prevent collapse - allow Streamlit to control */
+    /* These rules were preventing the collapse button from working */
+    
+    /* Ensure collapse button is clickable and functional */
+    button[aria-label*="Close"],
+    button[aria-label*="Open"],
+    button[title*="Close"],
+    button[title*="Open"] {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        z-index: 999 !important;
+    }
+    
+    /* Ensure sidebar collapse button works */
+    [data-testid="stSidebar"] ~ button,
+    button[aria-label*="sidebar"],
+    button[title*="sidebar"] {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        z-index: 999 !important;
     }
     
     /* Main content area - already defined above */
     
-    /* Dataframe styling - Modern light theme */
+    /* Dataframe styling - Modern light theme - COMPREHENSIVE */
     [data-testid='stDataFrame'] {
         background: #FFFFFF !important;
         border-radius: 12px !important;
         border: 1px solid rgba(0, 0, 0, 0.1) !important;
-        overflow: hidden;
+        overflow: visible !important;
+        min-height: 100px !important;
     }
     
-    /* Table styling */
+    [data-testid='stDataFrame'] > div {
+        background: #FFFFFF !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    [data-testid='stDataFrame'] * {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    /* Table styling - ensure white background for all tables */
     table {
         background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
     }
     
     thead {
         background: rgba(99, 102, 241, 0.08) !important;
+        background-color: rgba(99, 102, 241, 0.08) !important;
+    }
+    
+    tbody {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
     }
     
     th {
         color: #1F2937 !important;
         font-weight: 600 !important;
         border-color: rgba(0, 0, 0, 0.1) !important;
+        background: rgba(99, 102, 241, 0.08) !important;
+        background-color: rgba(99, 102, 241, 0.08) !important;
     }
     
     td {
         color: #374151 !important;
         border-color: rgba(0, 0, 0, 0.05) !important;
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    
+    tr {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
     }
     
     tr:hover {
         background: rgba(99, 102, 241, 0.05) !important;
+        background-color: rgba(99, 102, 241, 0.05) !important;
+    }
+    
+    tr:nth-child(even) {
+        background: #F9FAFB !important;
+        background-color: #F9FAFB !important;
     }
     
     /* Buttons - Modern RockAlpha style */
@@ -506,6 +897,105 @@ st.markdown("""
     button[kind="secondary"]:hover {
         background: #F3F4F6 !important;
         border-color: rgba(99, 102, 241, 0.3) !important;
+    }
+    
+    /* Plotly toolbar buttons - match white theme */
+    .modebar {
+        background: #FFFFFF !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .modebar-group {
+        background: #FFFFFF !important;
+    }
+    
+    .modebar-btn {
+        background: #FFFFFF !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        color: #1F2937 !important;
+        border-radius: 4px !important;
+    }
+    
+    .modebar-btn:hover {
+        background: #F3F4F6 !important;
+        border-color: rgba(99, 102, 241, 0.3) !important;
+        color: #6366F1 !important;
+    }
+    
+    .modebar-btn:active {
+        background: #E5E7EB !important;
+    }
+    
+    .modebar-btn svg {
+        fill: #1F2937 !important;
+    }
+    
+    .modebar-btn:hover svg {
+        fill: #6366F1 !important;
+    }
+    
+    /* Plotly modebar container */
+    .js-plotly-plot .plotly .modebar {
+        background: #FFFFFF !important;
+    }
+    
+    /* Plotly modebar buttons container */
+    .js-plotly-plot .plotly .modebar-container {
+        background: #FFFFFF !important;
+    }
+    
+    /* Plotly modebar button icons */
+    .js-plotly-plot .plotly .modebar-btn path {
+        fill: #1F2937 !important;
+    }
+    
+    .js-plotly-plot .plotly .modebar-btn:hover path {
+        fill: #6366F1 !important;
+    }
+    
+    /* More specific selectors for Plotly toolbar */
+    div[class*="modebar"],
+    div[class*="modebar"] > div,
+    div[class*="modebar"] button {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    div[class*="modebar"] button {
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        color: #1F2937 !important;
+    }
+    
+    div[class*="modebar"] button:hover {
+        background: #F3F4F6 !important;
+        background-color: #F3F4F6 !important;
+        border-color: rgba(99, 102, 241, 0.3) !important;
+    }
+    
+    div[class*="modebar"] button svg,
+    div[class*="modebar"] button path {
+        fill: #1F2937 !important;
+        stroke: #1F2937 !important;
+    }
+    
+    div[class*="modebar"] button:hover svg,
+    div[class*="modebar"] button:hover path {
+        fill: #6366F1 !important;
+        stroke: #6366F1 !important;
+    }
+    
+    /* Plotly toolbar container background */
+    .plotly .modebar-container {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    /* Plotly toolbar group background */
+    .plotly .modebar-group {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
     }
     
     /* Stop/Delete button specific styling - use key selector */
@@ -575,7 +1065,7 @@ st.markdown("""
     [data-testid='stExpander'] {
         background: #FFFFFF !important;
         border-radius: 12px !important;
-        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        border: none !important;
         margin: 1rem 0 !important;
     }
     
@@ -584,7 +1074,7 @@ st.markdown("""
         background: #FFFFFF !important;
         border-radius: 12px 12px 0 0 !important;
         padding: 1rem !important;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+        border-bottom: none !important;
     }
     
     [data-testid='stExpander'] summary {
@@ -684,11 +1174,27 @@ st.markdown("""
     [data-testid='stExpander'] {
         max-width: 100% !important;
         overflow: hidden !important;
+        border: none !important;
     }
     
     [data-testid='stExpander'] > div {
         max-width: 100% !important;
         overflow-x: auto !important;
+        border: none !important;
+    }
+    
+    /* Remove borders from expander content area */
+    [data-testid='stExpander'] > div > div {
+        border: none !important;
+    }
+    
+    /* Remove borders from code blocks inside expanders */
+    [data-testid='stExpander'] [data-testid='stCodeBlock'] {
+        border: none !important;
+    }
+    
+    [data-testid='stExpander'] [data-testid='stCodeBlock'] pre {
+        border: none !important;
     }
     
     /* Compact code blocks */
@@ -720,7 +1226,309 @@ st.markdown("""
         margin: 0.2rem 0 !important;
         padding: 0 !important;
     }
+    
+    /* Dataframe styling - white background - ENHANCED */
+    [data-testid='stDataFrame'] {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    [data-testid='stDataFrame'] > div {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    [data-testid='stDataFrame'] table {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        color: #1F2937 !important;
+    }
+    
+    [data-testid='stDataFrame'] thead {
+        background: rgba(99, 102, 241, 0.08) !important;
+        background-color: rgba(99, 102, 241, 0.08) !important;
+        color: #1F2937 !important;
+    }
+    
+    [data-testid='stDataFrame'] thead th {
+        background: rgba(99, 102, 241, 0.08) !important;
+        background-color: rgba(99, 102, 241, 0.08) !important;
+        color: #1F2937 !important;
+        font-weight: 600 !important;
+        border-color: rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    [data-testid='stDataFrame'] tbody {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        color: #1F2937 !important;
+    }
+    
+    [data-testid='stDataFrame'] tbody tr {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        color: #1F2937 !important;
+    }
+    
+    [data-testid='stDataFrame'] tbody tr:nth-child(even) {
+        background: #F9FAFB !important;
+        background-color: #F9FAFB !important;
+    }
+    
+    [data-testid='stDataFrame'] tbody tr:hover {
+        background: rgba(99, 102, 241, 0.05) !important;
+        background-color: rgba(99, 102, 241, 0.05) !important;
+    }
+    
+    [data-testid='stDataFrame'] tbody td {
+        background: transparent !important;
+        background-color: transparent !important;
+        color: #1F2937 !important;
+        border-color: rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    /* Ensure ALL table elements have white background */
+    table {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        color: #1F2937 !important;
+    }
+    
+    table thead {
+        background: rgba(99, 102, 241, 0.08) !important;
+        background-color: rgba(99, 102, 241, 0.08) !important;
+        color: #1F2937 !important;
+    }
+    
+    table tbody {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        color: #1F2937 !important;
+    }
+    
+    table tbody tr {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        color: #1F2937 !important;
+    }
+    
+    table tbody tr:nth-child(even) {
+        background: #F9FAFB !important;
+        background-color: #F9FAFB !important;
+    }
+    
+    table tbody tr:hover {
+        background: rgba(99, 102, 241, 0.05) !important;
+        background-color: rgba(99, 102, 241, 0.05) !important;
+    }
+    
+    table td, table th {
+        color: #1F2937 !important;
+        border-color: rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    table th {
+        background: rgba(99, 102, 241, 0.08) !important;
+        background-color: rgba(99, 102, 241, 0.08) !important;
+        font-weight: 600 !important;
+    }
+    
+    table td {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    
+    /* NUCLEAR OPTION - Override ANY possible dark/black backgrounds */
+    div[class*="stDataFrame"],
+    div[class*="dataframe"],
+    div[data-testid*="DataFrame"],
+    section[class*="stDataFrame"],
+    section[data-testid*="DataFrame"] {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    /* Override any Streamlit internal dark theme classes */
+    [class*="stDataFrame"] table,
+    [class*="dataframe"] table,
+    div[class*="st-"] table {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    [class*="stDataFrame"] thead,
+    [class*="dataframe"] thead,
+    div[class*="st-"] thead {
+        background: rgba(99, 102, 241, 0.08) !important;
+        background-color: rgba(99, 102, 241, 0.08) !important;
+    }
+    
+    [class*="stDataFrame"] tbody,
+    [class*="dataframe"] tbody,
+    div[class*="st-"] tbody {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    [class*="stDataFrame"] tr,
+    [class*="dataframe"] tr,
+    div[class*="st-"] tr {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    [class*="stDataFrame"] tr:nth-child(even),
+    [class*="dataframe"] tr:nth-child(even),
+    div[class*="st-"] tr:nth-child(even) {
+        background: #F9FAFB !important;
+        background-color: #F9FAFB !important;
+    }
+    
+    [class*="stDataFrame"] td,
+    [class*="dataframe"] td,
+    div[class*="st-"] td {
+        background: transparent !important;
+        background-color: transparent !important;
+        color: #1F2937 !important;
+        /* 确保文字可见 */
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    [class*="stDataFrame"] th,
+    [class*="dataframe"] th,
+    div[class*="st-"] th {
+        background: rgba(99, 102, 241, 0.08) !important;
+        background-color: rgba(99, 102, 241, 0.08) !important;
+        color: #1F2937 !important;
+        /* 确保文字可见 */
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    /* 确保 DataFrame 容器内所有内容可见 */
+    [data-testid='stDataFrame'] *,
+    [class*='stDataFrame'] * {
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: revert !important;
+    }
+    
+    /* 确保文字颜色对比度 */
+    [data-testid='stDataFrame'] th,
+    [data-testid='stDataFrame'] td {
+        color: #1F2937 !important;
+        font-size: 14px !important;
+    }
+    
+    /* st.table 样式（备用显示方式） */
+    [data-testid='stTable'] {
+        background: #FFFFFF !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        border-radius: 8px !important;
+    }
+    
+    [data-testid='stTable'] table {
+        background: #FFFFFF !important;
+        width: 100% !important;
+    }
+    
+    [data-testid='stTable'] th {
+        background: rgba(99, 102, 241, 0.08) !important;
+        color: #1F2937 !important;
+        padding: 12px !important;
+        font-weight: 600 !important;
+    }
+    
+    [data-testid='stTable'] td {
+        background: #FFFFFF !important;
+        color: #1F2937 !important;
+        padding: 10px !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    }
+    
+    [data-testid='stTable'] tr:nth-child(even) {
+        background: #F9FAFB !important;
+    }
+    
+    [data-testid='stTable'] tr:hover {
+        background: rgba(99, 102, 241, 0.05) !important;
+    }
+    
+    /* Override Streamlit's internal styling for data components */
+    .stDataFrame,
+    .dataframe-container,
+    .dataframe {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    .stDataFrame table,
+    .dataframe-container table,
+    .dataframe table {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    /* Metrics should not have dark backgrounds */
+    [data-testid='stMetric'] {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    
+    [data-testid='stMetricValue'] {
+        color: #1F2937 !important;
+    }
+    
+    [data-testid='stMetricLabel'] {
+        color: #6B7280 !important;
+    }
+    
+    /* Ensure columns don't have dark backgrounds */
+    [data-testid='column'] {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    
+    /* Plotly charts container */
+    .js-plotly-plot {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+    }
 </style>
+<script>
+(function() {
+    // Only set background color, don't force visibility - allow Streamlit to control collapse/expand
+    function styleSidebar() {
+        const sidebar = document.querySelector('section[data-testid="stSidebar"]');
+        if (sidebar) {
+            // Only set background color, let Streamlit handle display/visibility/width
+            sidebar.style.backgroundColor = '#FFFFFF';
+            
+            // Ensure child elements have white background too
+            const children = sidebar.querySelectorAll('*');
+            children.forEach(child => {
+                if (child.style) {
+                    // Only override if it's a background color issue, not display/visibility
+                    if (window.getComputedStyle(child).backgroundColor !== 'rgb(255, 255, 255)') {
+                        // Don't force, just suggest
+                    }
+                }
+            });
+        }
+    }
+    
+    // Run after DOM is ready to set background color
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', styleSidebar);
+    } else {
+        styleSidebar();
+    }
+    
+    // Run after Streamlit renders
+    setTimeout(styleSidebar, 100);
+})();
+</script>
 """, unsafe_allow_html=True)
 
 # 初始化 session state
@@ -797,13 +1605,17 @@ class BackgroundTask:
                             # 只对真正的错误添加 ERROR 前缀
                             # 排除：包含 INFO/WARNING 的行，或者只是分隔符/空行
                             stripped = line.strip()
+                            
+                            # 过滤分隔线（由重复的 =、-、_、*、# 组成）
+                            if stripped and len(stripped) > 3 and all(c in '=-_*#' for c in stripped):
+                                continue  # 跳过分隔线
+                            
                             if is_stderr and stripped:
                                 # 检查是否是真正的错误（包含错误关键词）
                                 error_keywords = ['error', 'exception', 'traceback', 'failed', 'fatal']
                                 is_real_error = (
                                     'INFO' not in line and 
                                     'WARNING' not in line and 
-                                    not all(c in '=-_*#' for c in stripped) and  # 不是分隔符
                                     any(keyword in line.lower() for keyword in error_keywords)  # 包含错误关键词
                                 )
                                 if is_real_error:
@@ -899,117 +1711,22 @@ class BackgroundTask:
             self.end_time = datetime.now()
             self.output_queue.put("⚠️ 任务已手动停止")
 
-# Top Navigation Bar
-def render_top_navigation():
-    # Get current page from query params or default to home
-    # st.query_params.get() returns a list, so we need to handle it properly
-    page_param = st.query_params.get("page", [])
-    if page_param:
-        current_page = page_param[0] if isinstance(page_param, list) else page_param
-    else:
-        current_page = "home"
-    
-    # Validate page value
-    valid_pages = ["home", "monitor", "optimization", "management"]
-    if current_page not in valid_pages:
-        current_page = "home"
-    
-    # Use Streamlit columns to create navigation bar
-    nav_col1, nav_col2 = st.columns([1, 4])
-    
-    with nav_col1:
-        st.markdown('<h1 class="nav-title">📊 QTSP</h1>', unsafe_allow_html=True)
-    
-    with nav_col2:
-        # Create button columns for navigation
-        btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
-        
-        with btn_col1:
-            if st.button("🏠 Home", key="nav_home", use_container_width=True, 
-                       type="primary" if current_page == "home" else "secondary"):
-                st.query_params["page"] = "home"
-                st.rerun()
-        
-        with btn_col2:
-            if st.button("📈 Real-time Monitor", key="nav_monitor", use_container_width=True,
-                       type="primary" if current_page == "monitor" else "secondary"):
-                st.query_params["page"] = "monitor"
-                st.rerun()
-        
-        with btn_col3:
-            if st.button("🚀 Strategy Optimization", key="nav_optimization", use_container_width=True,
-                       type="primary" if current_page == "optimization" else "secondary"):
-                st.query_params["page"] = "optimization"
-                st.rerun()
-        
-        with btn_col4:
-            if st.button("📁 Strategy Management", key="nav_management", use_container_width=True,
-                       type="primary" if current_page == "management" else "secondary"):
-                st.query_params["page"] = "management"
-                st.rerun()
-    
-    # Add custom CSS for navigation buttons to match the design
-    st.markdown("""
-    <style>
-    /* Navigation button styling - Modern RockAlpha light style */
-    div[data-testid="column"] button[key="nav_home"],
-    div[data-testid="column"] button[key="nav_monitor"],
-    div[data-testid="column"] button[key="nav_optimization"],
-    div[data-testid="column"] button[key="nav_management"] {
-        background: #F9FAFB !important;
-        border: 1px solid rgba(0, 0, 0, 0.1) !important;
-        color: #6B7280 !important;
-        font-weight: 600 !important;
-        border-radius: 10px !important;
-        transition: all 0.2s ease !important;
-        height: 2.5rem !important;
-        font-size: 0.9rem !important;
-        box-shadow: none !important;
-    }
-    
-    div[data-testid="column"] button[key="nav_home"]:hover,
-    div[data-testid="column"] button[key="nav_monitor"]:hover,
-    div[data-testid="column"] button[key="nav_optimization"]:hover,
-    div[data-testid="column"] button[key="nav_management"]:hover {
-        background: rgba(99, 102, 241, 0.1) !important;
-        color: #1F2937 !important;
-        border-color: rgba(99, 102, 241, 0.3) !important;
-        transform: translateY(-1px) !important;
-    }
-    
-    /* Active button styling - primary type */
-    div[data-testid="column"] button[key="nav_home"][class*="primary"],
-    div[data-testid="column"] button[key="nav_monitor"][class*="primary"],
-    div[data-testid="column"] button[key="nav_optimization"][class*="primary"],
-    div[data-testid="column"] button[key="nav_management"][class*="primary"] {
-        background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%) !important;
-        color: #FFFFFF !important;
-        border-color: transparent !important;
-        box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3), 0 2px 4px -1px rgba(99, 102, 241, 0.2) !important;
-    }
-    
-    div[data-testid="column"] button[key="nav_home"][class*="primary"]:hover,
-    div[data-testid="column"] button[key="nav_monitor"][class*="primary"]:hover,
-    div[data-testid="column"] button[key="nav_optimization"][class*="primary"]:hover,
-    div[data-testid="column"] button[key="nav_management"][class*="primary"]:hover {
-        background: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%) !important;
-        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4), 0 4px 6px -2px rgba(99, 102, 241, 0.3) !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    return current_page
+# Sidebar Navigation
+st.sidebar.markdown("# 📊 Navigation Menu")
+page_radio = st.sidebar.radio(
+    "Select Function",
+    ["🏠 Home", "📈 Real-time Monitor", "🚀 Strategy Optimization", "📁 Strategy Management"],
+    label_visibility="collapsed"
+)
 
-# Render top navigation and get current page
-page = render_top_navigation()
-
-# Sidebar navigation - Hidden since we moved to top
-# st.sidebar.markdown("# 📊 Navigation Menu")
-# page = st.sidebar.radio(
-#     "Select Function",
-#     ["🏠 Home", "📈 Real-time Monitor", "🚀 Strategy Optimization", "📁 Strategy Management"],
-#     label_visibility="collapsed"
-# )
+# Map display names to page keys
+page_mapping_reverse = {
+    "🏠 Home": "home",
+    "📈 Real-time Monitor": "monitor",
+    "🚀 Strategy Optimization": "optimization",
+    "📁 Strategy Management": "management"
+}
+page = page_mapping_reverse.get(page_radio, "home")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📌 Quick Info")
@@ -1107,7 +1824,7 @@ if strategies:
     latest = strategies[0]
     st.sidebar.info(f"**Latest Update**\n\n{latest['symbol']} - {latest['name']}\n\n{latest['modified']}")
 
-# Map page names to display names
+# Map page keys to display names
 page_mapping = {
     "home": "🏠 Home",
     "monitor": "📈 Real-time Monitor",
@@ -1116,9 +1833,6 @@ page_mapping = {
 }
 
 # Get the display name for the current page
-# Ensure page is a valid key
-if page not in page_mapping:
-    page = "home"
 display_page = page_mapping.get(page, "🏠 Home")
 
 # Debug: Uncomment to see current page in sidebar (for testing)
@@ -1188,7 +1902,8 @@ if display_page == "🏠 Home":
             'File Size': f"{s['size']} bytes"
         } for s in strategies[:10]])
         
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        # 使用 st.table() 替代 st.dataframe()（在当前环境更可靠）
+        st.table(df)
     else:
         st.info("No strategy files found, please run strategy optimization or manually add strategies.")
 
@@ -1283,10 +1998,89 @@ elif display_page == "📈 Real-time Monitor":
         
         /* Chart container */
         .chart-container {
-            background: #1A1A2E;
+            background: #FFFFFF;
             border-radius: 12px;
             padding: 1rem;
-            border: 1px solid rgba(161, 0, 255, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Real-time pulsing indicator - RockAlpha style */
+        .realtime-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #10B981;
+            margin-right: 8px;
+            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+        
+        /* Value change animation */
+        .value-updated {
+            animation: flash-green 0.5s ease-in-out;
+        }
+        
+        .value-updated-negative {
+            animation: flash-red 0.5s ease-in-out;
+        }
+        
+        @keyframes flash-green {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: rgba(16, 185, 129, 0.2); }
+        }
+        
+        @keyframes flash-red {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: rgba(239, 68, 68, 0.2); }
+        }
+        
+        /* Live badge */
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .live-badge .pulse-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: white;
+            margin-right: 6px;
+            animation: pulse-small 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-small {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
         }
     </style>
     """, unsafe_allow_html=True)
@@ -1294,60 +2088,87 @@ elif display_page == "📈 Real-time Monitor":
     # Configuration
     monitor_start_date = "2025-04-01"
     
-    # Initialize cache in session state
-    if 'monitor_cache' not in st.session_state:
-        st.session_state.monitor_cache = {
-            'results': None,
-            'timestamp': None,
-            'cache_duration': 300  # 缓存5分钟
-        }
+    # Initialize persistent cache
+    cache_manager = MonitorCache()
     
     # Check API key availability
-    import os
     has_api_key = bool(os.getenv('POLYGON_API_KEY'))
     
-    # Check if we need to refresh (cache expired or manual refresh)
-    cache_valid = False
-    if st.session_state.monitor_cache['results'] is not None:
-        if st.session_state.monitor_cache['timestamp'] is not None:
-            elapsed = (datetime.now() - st.session_state.monitor_cache['timestamp']).total_seconds()
-            if elapsed < st.session_state.monitor_cache['cache_duration']:
-                cache_valid = True
+    # Real-time update status
+    saved_results_file = Path("monitor_results.json")
+    last_update_time = None
+    if saved_results_file.exists():
+        try:
+            with open(saved_results_file, 'r', encoding='utf-8') as f:
+                saved_data = json.load(f)
+                last_update_time = saved_data.get('generated_at', 'N/A')
+        except:
+            pass
     
-    # Auto-refresh toggle and manual refresh button
-    col1, col2, col3 = st.columns([2, 2, 1])
+    # Header with real-time indicator - compact layout
+    col1, col2, col3 = st.columns([2.5, 1, 1])
     with col1:
-        auto_refresh = st.checkbox("🔄 Auto-refresh", value=False, key="monitor_auto_refresh")
+        # Compact status display
+        status_html = f"""
+        <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: #F9FAFB; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); margin-bottom: 0.5rem;">
+            <span style="font-size: 1rem;">📅 <strong>Monitoring Period:</strong> {monitor_start_date} to <strong>Today</strong></span>
+            {f'<span style="color: #666; margin-left: 0.5rem;">| 🕐 <strong>Last Update:</strong> {last_update_time}</span>' if last_update_time else ''}
+        </div>
+        """
+        st.markdown(status_html, unsafe_allow_html=True)
     with col2:
-        if st.button("🔄 Refresh Now", use_container_width=True, key="monitor_refresh_btn"):
-            # Clear cache to force refresh
-            st.session_state.monitor_cache['results'] = None
-            st.session_state.monitor_cache['timestamp'] = None
+        # Real-time indicator with pulsing effect
+        auto_refresh = st.checkbox("🔄 Auto Refresh", value=True, key="monitor_auto_refresh")
+    with col3:
+        if st.button("🔄 Manual Update", use_container_width=True, key="monitor_update_btn"):
+            # Force update for all symbols
+            st.session_state['force_update'] = True
             st.rerun()
     
-    # Show cache status
-    if cache_valid:
-        cache_age = (datetime.now() - st.session_state.monitor_cache['timestamp']).total_seconds()
-        st.info(f"📅 Monitoring Period: **{monitor_start_date}** to **Today** | 💾 Using cached data (updated {int(cache_age)}s ago)")
-    else:
-        if has_api_key:
-            st.info(f"📅 Monitoring Period: **{monitor_start_date}** to **Today** | 🔴 Live data enabled")
-        else:
-            st.warning(f"📅 Monitoring Period: **{monitor_start_date}** to **Today** | 💾 Using cached backtest results (POLYGON_API_KEY not set for live data)")
+    # Try to load from saved results file first
+    saved_results_file = Path("monitor_results.json")
+    monitor_results = []
+    saved_trades_map = {}  # Store trades data by symbol for later use
     
-    st.markdown("---")
+    if saved_results_file.exists():
+        try:
+            with open(saved_results_file, 'r', encoding='utf-8') as f:
+                saved_data = json.load(f)
+                monitor_results = saved_data.get('results', [])
+                saved_date = saved_data.get('generated_at', 'N/A')
+                
+            if monitor_results:
+                # Compact success message
+                success_html = f"""
+                <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: #ECFDF5; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.3); margin-bottom: 1rem;">
+                    <span style="color: #10B981; font-size: 1.1rem;">✅</span>
+                    <span style="color: #1F2937;">Loaded <strong>{len(monitor_results)}</strong> symbols from saved results <span style="color: #666;">(Generated: {saved_date})</span></span>
+                </div>
+                """
+                st.markdown(success_html, unsafe_allow_html=True)
+                # Convert equity_curve from list of dicts to pandas Series and save trades data
+                for result in monitor_results:
+                    # Save trades data for this symbol
+                    saved_trades_map[result['symbol']] = result.get('trades', [])
+                    
+                    equity_curve = result.get('equity_curve', [])
+                    if equity_curve and isinstance(equity_curve, list):
+                        # Convert list of {date, value} dicts to Series
+                        dates = [item['date'] for item in equity_curve]
+                        values = [item['value'] for item in equity_curve]
+                        result['equity_curve'] = pd.Series(values, index=pd.to_datetime(dates))
+        except Exception as e:
+            st.warning(f"⚠️ Error loading saved results: {e}. Will load from cache instead.")
+            monitor_results = []
     
-    # Load strategies
-    strategies = load_strategies()
-    
-    if not strategies:
-        st.warning("⚠️ No strategies found. Please run optimization first.")
-        monitor_results = []
-    else:
-        # Use cached results if available and valid
-        if cache_valid and st.session_state.monitor_cache['results'] is not None:
-            monitor_results = st.session_state.monitor_cache['results']
-            st.markdown(f"### 🎯 Monitoring {len(monitor_results)} Symbols (Cached)")
+    # If no saved results, load from cache (existing logic)
+    if not monitor_results:
+        # Load strategies
+        strategies = load_strategies()
+        
+        if not strategies:
+            st.warning("⚠️ No strategies found. Please run optimization first.")
+            monitor_results = []
         else:
             # Group strategies by symbol and find best performing one
             symbol_best_strategies = {}
@@ -1366,103 +2187,154 @@ elif display_page == "📈 Real-time Monitor":
             
             st.markdown(f"### 🎯 Monitoring {len(symbol_best_strategies)} Symbols")
             
-            # Run live backtests for each symbol
+            # Load or update monitor data
             monitor_results = []
+            force_update = st.session_state.get('force_update', False)
             
-            with st.spinner('🔄 Loading strategy data...'):
+            with st.spinner('🔄 Loading strategy data from cache...'):
                 for symbol, strategy in symbol_best_strategies.items():
                     try:
-                        # Load strategy config
-                        with open(strategy['path'], 'r', encoding='utf-8') as f:
-                            strategy_config = json.load(f)
+                        # Check if we need to update (once per day)
+                        needs_update = cache_manager.needs_update(symbol) or force_update
                         
-                        # Get stored backtest performance from strategy file
-                        backtest_perf = strategy.get('backtest_performance', {})
+                        # Load cached data
+                        cached_data = cache_manager.get_symbol_data(symbol)
+                        equity_curve_series = cache_manager.get_equity_curve_series(symbol)
                         
-                        # Check if we have existing backtest data
-                        if backtest_perf and 'total_return' in backtest_perf:
-                            # Use cached backtest results from strategy file
-                            total_return = backtest_perf.get('total_return', 0)
-                            num_trades = backtest_perf.get('num_trades', 0)
-                            win_rate = backtest_perf.get('win_rate', 0)
-                            final_value = 10000 * (1 + total_return)
-                            
-                            # Create a simple equity curve from stored data
-                            # Generate synthetic equity curve based on return
-                            days = (datetime.now() - pd.to_datetime(monitor_start_date)).days
-                            dates = pd.date_range(start=monitor_start_date, periods=days, freq='D')
-                            # Simple linear growth assumption
-                            equity_values = [10000 + (final_value - 10000) * (i / days) for i in range(days)]
-                            equity_curve = pd.Series(equity_values, index=dates)
-                            
+                        if needs_update and has_api_key:
+                            # Update today's data point
+                            with st.spinner(f'🔄 Updating {symbol}...'):
+                                # Load strategy config
+                                with open(strategy['path'], 'r', encoding='utf-8') as f:
+                                    strategy_config = json.load(f)
+                                
+                                # Run backtest for today only (or from last update to today)
+                                backtest = OptionBacktest(initial_capital=10000, use_real_prices=True)
+                                
+                                params = strategy_config.get('params', {})
+                                signal_weights = strategy_config.get('signal_weights', {})
+                                
+                                # Determine start date: use last update date or monitor_start_date
+                                last_update = cache_manager.get_last_update_date(symbol)
+                                if last_update:
+                                    update_start_date = (datetime.strptime(last_update, '%Y-%m-%d') + timedelta(days=1)).strftime('%Y-%m-%d')
+                                else:
+                                    update_start_date = monitor_start_date
+                                
+                                end_date = datetime.now().strftime("%Y-%m-%d")
+                                
+                                result = backtest.run_backtest(
+                                    symbol=symbol,
+                                    start_date=update_start_date,
+                                    end_date=end_date,
+                                    strategy='auto',
+                                    entry_signal=signal_weights,
+                                    profit_target=params.get('profit_target', 5.0),
+                                    stop_loss=params.get('stop_loss', -0.5),
+                                    max_holding_days=params.get('max_holding_days', 30),
+                                    position_size=params.get('position_size', 0.1)
+                                )
+                                
+                                # Get today's final value
+                                if len(result.equity_curve) > 0:
+                                    today_value = result.equity_curve[-1]
+                                    today_date = datetime.now().strftime('%Y-%m-%d')
+                                    
+                                    # Update equity curve with new data point
+                                    cache_manager.update_equity_curve(symbol, {
+                                        'date': today_date,
+                                        'value': today_value
+                                    })
+                                    
+                                    # Reload updated curve
+                                    equity_curve_series = cache_manager.get_equity_curve_series(symbol)
+                                    
+                                    # Update cached metrics
+                                    final_value = today_value
+                                    total_return = (final_value - 10000) / 10000
+                                    num_trades = len(result.trades)
+                                    winning_trades = sum(1 for t in result.trades if t.pnl and t.pnl > 0)
+                                    win_rate = (winning_trades / num_trades * 100) if num_trades > 0 else 0
+                                    
+                                    # Save updated metrics
+                                    cached_data = cache_manager.get_symbol_data(symbol) or {}
+                                    cached_data.update({
+                                        'symbol': symbol,
+                                        'strategy_name': strategy['name'],
+                                        'total_return': total_return,
+                                        'final_value': final_value,
+                                        'num_trades': num_trades,
+                                        'win_rate': win_rate,
+                                        'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                                    })
+                                    cache_manager.save_symbol_data(symbol, cached_data)
+                        
+                        # Load from cache
+                        if cached_data:
                             monitor_results.append({
                                 'symbol': symbol,
-                                'strategy_name': strategy['name'],
-                                'total_return': total_return,
-                                'final_value': final_value,
-                                'num_trades': num_trades,
-                                'win_rate': win_rate,
-                                'equity_curve': equity_curve,
-                                'trades': [],  # No detailed trade history from cache
-                                'is_cached': True
+                                'strategy_name': cached_data.get('strategy_name', strategy['name']),
+                                'total_return': cached_data.get('total_return', 0),
+                                'final_value': cached_data.get('final_value', 10000),
+                                'num_trades': cached_data.get('num_trades', 0),
+                                'win_rate': cached_data.get('win_rate', 0),
+                                'equity_curve': equity_curve_series,
+                                'trades': saved_trades_map.get(symbol, []),  # Use saved trades data if available
+                                'is_cached': True,
+                                'last_updated': cached_data.get('last_updated', 'N/A')
                             })
                         else:
-                            # Try to run live backtest if API key is available
-                            import os
-                            if not os.getenv('POLYGON_API_KEY'):
-                                st.warning(f"⚠️ {symbol}: No cached data and POLYGON_API_KEY not set. Skipping live backtest.")
-                                continue
-                            
-                            # Run backtest from 2025-04-01 to today
-                            backtest = OptionBacktest(initial_capital=10000, use_real_prices=True)
-                            
-                            params = strategy_config.get('params', {})
-                            signal_weights = strategy_config.get('signal_weights', {})
-                            
-                            result = backtest.run_backtest(
-                                symbol=symbol,
-                                start_date=monitor_start_date,
-                                end_date=datetime.now().strftime("%Y-%m-%d"),
-                                strategy='auto',
-                                entry_signal=signal_weights,
-                                profit_target=params.get('profit_target', 5.0),
-                                stop_loss=params.get('stop_loss', -0.5),
-                                max_holding_days=params.get('max_holding_days', 30),
-                                position_size=params.get('position_size', 0.1)
-                            )
-                            
-                            # Calculate metrics
-                            final_value = result.equity_curve[-1] if len(result.equity_curve) > 0 else 10000
-                            total_return = (final_value - 10000) / 10000
-                            num_trades = len(result.trades)
-                            winning_trades = sum(1 for t in result.trades if t.pnl and t.pnl > 0)
-                            win_rate = (winning_trades / num_trades * 100) if num_trades > 0 else 0
-                            
-                            monitor_results.append({
-                                'symbol': symbol,
-                                'strategy_name': strategy['name'],
-                                'total_return': total_return,
-                                'final_value': final_value,
-                                'num_trades': num_trades,
-                                'win_rate': win_rate,
-                                'equity_curve': result.equity_curve,
-                                'trades': result.trades,
-                                'is_cached': False
-                            })
-                        
+                            # No cache available, use strategy file data
+                            backtest_perf = strategy.get('backtest_performance', {})
+                            if backtest_perf and 'total_return' in backtest_perf:
+                                total_return = backtest_perf.get('total_return', 0)
+                                num_trades = backtest_perf.get('num_trades', 0)
+                                win_rate = backtest_perf.get('win_rate', 0)
+                                final_value = 10000 * (1 + total_return)
+                                
+                                # Create initial equity curve
+                                today = datetime.now().strftime('%Y-%m-%d')
+                                cache_manager.update_equity_curve(symbol, {
+                                    'date': today,
+                                    'value': final_value
+                                })
+                                
+                                equity_curve_series = cache_manager.get_equity_curve_series(symbol)
+                                
+                                monitor_results.append({
+                                    'symbol': symbol,
+                                    'strategy_name': strategy['name'],
+                                    'total_return': total_return,
+                                    'final_value': final_value,
+                                    'num_trades': num_trades,
+                                    'win_rate': win_rate,
+                                    'equity_curve': equity_curve_series,
+                                    'trades': saved_trades_map.get(symbol, []),  # Use saved trades data if available
+                                    'is_cached': True,
+                                    'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                                })
                     except Exception as e:
                         st.error(f"❌ Error loading {symbol}: {str(e)}")
+                        import traceback
+                        st.code(traceback.format_exc())
                         continue
             
-            # Cache the results
-            st.session_state.monitor_cache['results'] = monitor_results
-            st.session_state.monitor_cache['timestamp'] = datetime.now()
+            # Clear force update flag
+            if force_update:
+                st.session_state['force_update'] = False
+            
+            # Sort by return (best first)
+            if monitor_results:
+                monitor_results.sort(key=lambda x: x['total_return'], reverse=True)
         
-        # Sort by return (best first)
-        if monitor_results:
-            monitor_results.sort(key=lambda x: x['total_return'], reverse=True)
+    # Display results (whether from saved file or cache)
+    if monitor_results:
+        # Store previous values for comparison
+        if 'monitor_previous_values' not in st.session_state:
+            st.session_state.monitor_previous_values = {}
         
-        # Display summary metrics
+        # Display summary metrics with real-time indicator
+        st.markdown("### 📊 Real-time Performance Summary")
         col1, col2, col3, col4 = st.columns(4)
         
         total_symbols = len(monitor_results)
@@ -1470,14 +2342,69 @@ elif display_page == "📈 Real-time Monitor":
         positive_symbols = sum(1 for r in monitor_results if r['total_return'] > 0)
         total_trades = sum(r['num_trades'] for r in monitor_results)
         
+        # Calculate total portfolio value
+        total_portfolio_value = sum(r['final_value'] for r in monitor_results)
+        prev_total_value = st.session_state.monitor_previous_values.get('total_value', total_portfolio_value)
+        
         with col1:
-            st.metric("🎯 Total Symbols", total_symbols)
+            st.markdown(f"""
+            <div style="text-align: center;">
+                <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.3rem;">🎯 Total Symbols</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: #1F2937;">{total_symbols}</div>
+            </div>
+            """, unsafe_allow_html=True)
         with col2:
-            st.metric("📈 Avg Return", f"{avg_return:+.2%}")
+            st.markdown(f"""
+            <div style="text-align: center;">
+                <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.3rem;">📈 Avg Return</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: {'#10B981' if avg_return >= 0 else '#EF4444'};">
+                    {avg_return:+.2%}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
         with col3:
-            st.metric("✅ Positive", f"{positive_symbols}/{total_symbols}")
+            st.markdown(f"""
+            <div style="text-align: center;">
+                <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.3rem;">✅ Positive</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: #1F2937;">{positive_symbols}/{total_symbols}</div>
+            </div>
+            """, unsafe_allow_html=True)
         with col4:
-            st.metric("📊 Total Trades", total_trades)
+            st.markdown(f"""
+            <div style="text-align: center;">
+                <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.3rem;">📊 Total Trades</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: #1F2937;">{total_trades}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Total Portfolio Value with live indicator
+        st.markdown("---")
+        portfolio_change = total_portfolio_value - prev_total_value
+        portfolio_change_pct = (portfolio_change / prev_total_value * 100) if prev_total_value > 0 else 0
+        
+        st.markdown(f"""
+        <div style="text-align: center; padding: 1.5rem; background: #FFFFFF; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1); margin: 1rem 0;">
+            <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">
+                TOTAL PORTFOLIO VALUE
+                <span class="live-badge">
+                    <span class="pulse-dot"></span>
+                    LIVE
+                </span>
+            </div>
+            <div style="font-size: 3rem; font-weight: bold; color: #1F2937; margin: 0.5rem 0;">
+                ${total_portfolio_value:,.2f}
+            </div>
+            <div style="font-size: 1.2rem; color: {'#10B981' if portfolio_change >= 0 else '#EF4444'};">
+                {portfolio_change:+.2f} ({portfolio_change_pct:+.2f}%)
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Update previous values
+        st.session_state.monitor_previous_values = {
+            'total_value': total_portfolio_value,
+            'symbols': {r['symbol']: r['final_value'] for r in monitor_results}
+        }
         
         st.markdown("---")
         
@@ -1486,95 +2413,198 @@ elif display_page == "📈 Real-time Monitor":
         
         for idx, result in enumerate(monitor_results):
             card_class = "monitor-card-positive" if result['total_return'] > 0 else "monitor-card-negative"
-            data_source = "💾 Cached" if result.get('is_cached', False) else "🔴 Live"
-            data_source_class = "data-source"
             
-            col1, col2 = st.columns([2, 3])
+            # Check if value changed (for animation)
+            symbol = result['symbol']
+            prev_value = st.session_state.monitor_previous_values.get('symbols', {}).get(symbol, result['final_value'])
+            value_changed = abs(result['final_value'] - prev_value) > 0.01
+            value_increased = result['final_value'] > prev_value
             
-            with col1:
+            # Add animation class if value changed
+            animation_class = ""
+            if value_changed and auto_refresh:
+                animation_class = "value-updated" if value_increased else "value-updated-negative"
+            
+            # Display summary card at top (compact horizontal layout)
                 st.markdown(f"""
-                <div class="{card_class}">
-                    <h2 style="margin:0; text-align: center;">📊 {result['symbol']}</h2>
-                    <p class="subtitle-text">{result['strategy_name']}</p>
-                    <p class="{data_source_class}">{data_source}</p>
-                    <div class="big-number">{result['total_return']:+.2%}</div>
-                    <p style="font-size: 1.1rem; margin: 0.5rem 0; text-align: center;">
+            <div class="{card_class} {animation_class}" id="card-{symbol}" style="margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span class="realtime-indicator"></span>
+                        <h2 style="margin:0; font-size: 1.5rem;">📊 {result['symbol']}</h2>
+                        <span class="live-badge">
+                            <span class="pulse-dot"></span>
+                            LIVE
+                        </span>
+                    </div>
+                    <div style="flex: 1; text-align: center;">
+                        <p class="subtitle-text" style="margin: 0.2rem 0; font-size: 1rem;">{result['strategy_name']}</p>
+                        <div class="big-number" style="font-size: 2rem; margin: 0.3rem 0;">{result['total_return']:+.2%}</div>
+                        <p style="font-size: 0.95rem; margin: 0.3rem 0; color: #666;">
                         💰 ${result['final_value']:,.0f} | 
                         📊 {result['num_trades']} trades | 
                         🎯 {result['win_rate']:.1f}% win rate
                     </p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p style="font-size: 0.85rem; color: #666; margin: 0;">
+                            Updated: {result.get('last_updated', 'N/A')}
+                        </p>
+                    </div>
+                </div>
                 </div>
                 """, unsafe_allow_html=True)
             
-            with col2:
-                # Check if equity_curve exists and is not empty
-                equity_curve = result.get('equity_curve')
-                if equity_curve is not None:
-                    # Convert to Series if it's not already
-                    if isinstance(equity_curve, pd.Series):
-                        equity_series = equity_curve.copy()
+            # Display chart below (full width, larger height)
+            # Check if equity_curve exists and is not empty
+            equity_curve = result.get('equity_curve')
+            if equity_curve is not None:
+                # Convert to Series if it's not already
+                if isinstance(equity_curve, pd.Series):
+                    equity_series = equity_curve.copy()
+                else:
+                    equity_series = pd.Series(equity_curve)
+                
+                # Check if series is not empty
+                if len(equity_series) > 0:
+                    # Convert to DataFrame for easier handling
+                    if isinstance(equity_curve, list):
+                        # Convert list of {date, value} dicts to DataFrame
+                        df = pd.DataFrame(equity_curve)
+                        df['date'] = pd.to_datetime(df['date'])
+                        df = df.sort_values('date')
+                        dates = df['date']
+                        values = df['value']
                     else:
-                        equity_series = pd.Series(equity_curve)
-                    
-                    # Check if series is not empty
-                    if len(equity_series) > 0:
-                        # Create equity curve chart
-                        fig, ax = plt.subplots(figsize=(10, 4))
-                        
-                        # Set dark theme for matplotlib
-                        fig.patch.set_facecolor('#1A1A2E')
-                        ax.set_facecolor('#1A1A2E')
-                        
                         # Ensure index is datetime
                         if not isinstance(equity_series.index, pd.DatetimeIndex):
                             equity_series.index = pd.to_datetime(equity_series.index)
-                        
-                        line_color = '#38ef7d' if result['total_return'] > 0 else '#ff6b6b'
-                        fill_color = '#38ef7d' if result['total_return'] > 0 else '#ff6b6b'
-                        
-                        ax.plot(equity_series.index, equity_series.values, 
-                               linewidth=2.5, color=line_color)
-                        ax.axhline(y=10000, color='#A100FF', linestyle='--', alpha=0.5, linewidth=1)
-                        ax.fill_between(equity_series.index, 10000, equity_series.values, 
-                                       alpha=0.3, color=fill_color)
-                        
-                        # Style the chart
-                        ax.set_title(f'{result["symbol"]} Equity Curve', fontsize=12, fontweight='bold', color='#EAEAEA')
-                        ax.set_xlabel('Date', fontsize=10, color='#EAEAEA')
-                        ax.set_ylabel('Portfolio Value ($)', fontsize=10, color='#EAEAEA')
-                        ax.tick_params(colors='#EAEAEA')
-                        ax.grid(True, alpha=0.2, color='#A100FF')
-                        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
-                        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right', color='#EAEAEA')
-                        plt.tight_layout()
-                        
-                        st.pyplot(fig)
-                        plt.close(fig)
-                    else:
-                        st.info("No equity curve data available")
+                        dates = equity_series.index
+                        values = equity_series.values
+                    
+                    # Determine colors based on return
+                    line_color = '#10B981' if result['total_return'] > 0 else '#EF4444'
+                    fill_color = 'rgba(16, 185, 129, 0.3)' if result['total_return'] > 0 else 'rgba(239, 68, 68, 0.3)'
+                    
+                    # Create interactive Plotly chart
+                    fig = go.Figure()
+                    
+                    # Add equity curve line
+                    fig.add_trace(go.Scatter(
+                        x=dates,
+                        y=values,
+                        mode='lines',
+                        name='Portfolio Value',
+                        line=dict(
+                            color=line_color,
+                            width=3
+                        ),
+                        hovertemplate='<b>%{fullData.name}</b><br>' +
+                                    'Date: %{x|%Y-%m-%d}<br>' +
+                                    'Value: $%{y:,.2f}<br>' +
+                                    '<extra></extra>',
+                        fill='tonexty',
+                        fillcolor=fill_color
+                    ))
+                    
+                    # Add baseline (initial capital)
+                    fig.add_hline(
+                        y=10000,
+                        line_dash="dash",
+                        line_color="#A100FF",
+                        opacity=0.5,
+                        annotation_text="Initial Capital",
+                        annotation_position="right"
+                    )
+                    
+                    # Update layout for white background theme
+                    fig.update_layout(
+                        title={
+                            'text': f'{result["symbol"]} Equity Curve',
+                            'x': 0.5,
+                            'xanchor': 'center',
+                            'font': {'size': 16, 'color': '#1F2937'}
+                        },
+                        xaxis=dict(
+                            title=dict(text='Date', font=dict(color='#1F2937')),
+                            tickfont=dict(color='#1F2937'),
+                            gridcolor='rgba(0,0,0,0.1)',
+                            showgrid=True
+                        ),
+                        yaxis=dict(
+                            title=dict(text='Portfolio Value ($)', font=dict(color='#1F2937')),
+                            tickfont=dict(color='#1F2937'),
+                            gridcolor='rgba(0,0,0,0.1)',
+                            showgrid=True,
+                            tickformat='$,.0f'
+                        ),
+                        plot_bgcolor='#FFFFFF',
+                        paper_bgcolor='#FFFFFF',
+                        hovermode='x unified',
+                        height=500,
+                        margin=dict(l=60, r=30, t=40, b=60),
+                        showlegend=False
+                    )
+                    
+                    # Display interactive chart
+                    st.plotly_chart(fig, use_container_width=True, config={
+                        'displayModeBar': True,
+                        'displaylogo': False,
+                        'modeBarButtonsToRemove': ['pan2d', 'lasso2d'],
+                        'toImageButtonOptions': {
+                            'format': 'png',
+                            'filename': f'{result["symbol"]}_equity_curve',
+                            'height': 600,
+                            'width': 1200,
+                            'scale': 2
+                        }
+                    })
                 else:
                     st.info("No equity curve data available")
             
             # Expandable trade details
             with st.expander(f"📝 View {result['num_trades']} Trades for {result['symbol']}"):
-                if result['trades']:
+                if result.get('trades') and len(result['trades']) > 0:
                     trades_data = []
                     for i, trade in enumerate(result['trades'], 1):
-                        trades_data.append({
-                            '#': i,
-                            'Entry': trade.entry_date,
-                            'Exit': trade.exit_date if trade.exit_date else '—',
-                            'Type': trade.strategy.upper() if hasattr(trade, 'strategy') else 'N/A',
-                            'Strike': f"${trade.strike:.2f}" if hasattr(trade, 'strike') else 'N/A',
-                            'Entry Price': f"${trade.entry_price:.2f}",
-                            'Exit Price': f"${trade.exit_price:.2f}" if trade.exit_price else '—',
-                            'P&L': f"${trade.pnl:+,.2f}" if trade.pnl is not None else '—',
-                            'Return': f"{trade.pnl_pct:+.2%}" if trade.pnl_pct is not None else '—',
-                            'Status': trade.status.upper() if hasattr(trade, 'status') else 'N/A'
-                        })
+                        # 处理两种格式：Trade 对象或字典
+                        if isinstance(trade, dict):
+                            # 从 JSON 加载的字典格式
+                            trades_data.append({
+                                '#': i,
+                                'Entry': trade.get('entry_date', 'N/A'),
+                                'Exit': trade.get('exit_date', '—') if trade.get('exit_date') else '—',
+                                'Type': trade.get('strategy', 'N/A').upper() if trade.get('strategy') else 'N/A',
+                                'Strike': f"${trade.get('strike', 0):.2f}" if trade.get('strike') is not None else 'N/A',
+                                'Entry Price': f"${trade.get('entry_price', 0):.2f}",
+                                'Exit Price': f"${trade.get('exit_price', 0):.2f}" if trade.get('exit_price') else '—',
+                                'P&L': f"${trade.get('pnl', 0):+,.2f}" if trade.get('pnl') is not None else '—',
+                                'Return': f"{trade.get('pnl_pct', 0):+.2%}" if trade.get('pnl_pct') is not None else '—',
+                                'Status': trade.get('status', 'N/A').upper() if trade.get('status') else 'N/A'
+                            })
+                        else:
+                            # Trade 对象格式
+                            trades_data.append({
+                                '#': i,
+                                'Entry': trade.entry_date,
+                                'Exit': trade.exit_date if trade.exit_date else '—',
+                                'Type': trade.strategy.upper() if hasattr(trade, 'strategy') else 'N/A',
+                                'Strike': f"${trade.strike:.2f}" if hasattr(trade, 'strike') else 'N/A',
+                                'Entry Price': f"${trade.entry_price:.2f}",
+                                'Exit Price': f"${trade.exit_price:.2f}" if trade.exit_price else '—',
+                                'P&L': f"${trade.pnl:+,.2f}" if trade.pnl is not None else '—',
+                                'Return': f"{trade.pnl_pct:+.2%}" if trade.pnl_pct is not None else '—',
+                                'Status': trade.status.upper() if hasattr(trade, 'status') else 'N/A'
+                            })
                     
                     trades_df = pd.DataFrame(trades_data)
-                    st.dataframe(trades_df, use_container_width=True, hide_index=True)
+                    
+                    # 直接使用 st.table() 替代 st.dataframe()
+                    # st.dataframe() 在当前环境中渲染为空白，改用更可靠的 st.table()
+                    st.table(trades_df)
+                elif result.get('num_trades', 0) > 0:
+                    st.warning(f"⚠️ Trade details not available. {result['num_trades']} trades were executed, but detailed records were not saved.")
+                    st.info("💡 **Tip:** Click '🔄 Manual Update' button above to refresh and save trade details, or wait for the automatic update (runs every 15 minutes).")
                 else:
                     st.info("No trades executed in this period")
         
@@ -1591,12 +2621,30 @@ elif display_page == "📈 Real-time Monitor":
             'Win Rate': f"{r['win_rate']:.1f}%"
         } for r in monitor_results])
         
-        st.dataframe(comparison_df, use_container_width=True, hide_index=True)
+        # 使用 st.table() 显示（st.dataframe 在某些环境渲染有问题）
+        st.table(comparison_df)
+    else:
+        st.info("💡 No monitor results available. Data will appear after the first update cycle.")
     
-    # Auto-refresh logic
+        # Auto-refresh logic for real-time updates
     if auto_refresh:
-        time.sleep(30)
-        st.rerun()
+            # Check if monitor_results.json was recently updated (within last 16 minutes)
+            if saved_results_file.exists():
+                file_mtime = saved_results_file.stat().st_mtime
+                time_since_update = time.time() - file_mtime
+                
+                # Refresh every 15 seconds to check for updates
+                if time_since_update < 960:  # 16 minutes
+                    time.sleep(15)
+                    st.rerun()
+                else:
+                    # No recent updates, refresh every 30 seconds
+                    time.sleep(30)
+                    st.rerun()
+            else:
+                # File doesn't exist, refresh every 30 seconds
+                time.sleep(30)
+                st.rerun()
 
 
 # ==================== 策略优化 ====================
@@ -1720,13 +2768,27 @@ elif display_page == "🚀 Strategy Optimization":
                             del st.session_state.tasks[task_id]
                             st.rerun()
                 
-                # 实时日志 - 使用可折叠的 expander，不单独占大框
+                # 实时日志 - 使用 checkbox 控制显示，避免自动刷新时关闭
                 logs = task.get_logs()
                 if logs:
                     display_logs = logs[-50:] if len(logs) > 50 else logs
                     log_text = "\n".join(display_logs)
                     
-                    with st.expander(f"📜 Logs ({len(display_logs)}/{len(logs)})", expanded=False):
+                    # 使用 session_state 保存显示状态
+                    log_show_key = f"log_show_{task_id}"
+                    if log_show_key not in st.session_state:
+                        st.session_state[log_show_key] = False
+                    
+                    # 使用 checkbox 控制显示
+                    show_logs = st.checkbox(
+                        f"📜 Logs ({len(display_logs)}/{len(logs)})",
+                        value=st.session_state[log_show_key],
+                        key=f"log_checkbox_{task_id}",
+                        help="Click to show/hide logs"
+                    )
+                    st.session_state[log_show_key] = show_logs
+                    
+                    if show_logs:
                         col1, col2 = st.columns([4, 1])
                         with col1:
                             st.caption(f"Showing last {len(display_logs)} entries")
@@ -1741,7 +2803,27 @@ elif display_page == "🚀 Strategy Optimization":
                                     key=f"opt_save_logs_{task_id}",
                                     use_container_width=True
                                 )
-                        st.code(log_text, language="log")
+                        
+                        # 使用纯文本显示，外部加边框
+                        log_html = f"""
+                        <div style="
+                            border: 1px solid rgba(0, 0, 0, 0.1);
+                            border-radius: 8px;
+                            padding: 1rem;
+                            background: #FFFFFF;
+                            font-family: 'Courier New', monospace;
+                            font-size: 13px;
+                            line-height: 1.6;
+                            color: #1F2937;
+                            max-height: 500px;
+                            overflow-y: auto;
+                            white-space: pre-wrap;
+                            word-wrap: break-word;
+                        ">
+{log_text}
+                        </div>
+                        """
+                        st.markdown(log_html, unsafe_allow_html=True)
                 else:
                     st.caption(f"⏳ Waiting for logs... ({task.get_duration():.1f}s)")
                 
@@ -1758,7 +2840,27 @@ elif display_page == "🚀 Strategy Optimization":
                     symbol = task.task_name.split()[-1]  # 从任务名称提取标的
                     latest = get_latest_strategy(symbol)
                     if latest:
-                        st.json(latest)
+                        # 使用白色主题显示JSON
+                        json_str = json.dumps(latest, indent=2, ensure_ascii=False)
+                        json_html = f"""
+                        <div style="
+                            border: 1px solid rgba(0, 0, 0, 0.1);
+                            border-radius: 8px;
+                            padding: 1rem;
+                            background: #FFFFFF;
+                            font-family: 'Courier New', monospace;
+                            font-size: 13px;
+                            line-height: 1.6;
+                            color: #1F2937;
+                            max-height: 500px;
+                            overflow-y: auto;
+                            white-space: pre-wrap;
+                            word-wrap: break-word;
+                        ">
+{json_str}
+                        </div>
+                        """
+                        st.markdown(json_html, unsafe_allow_html=True)
                         st.download_button(
                             "💾 Download Strategy File",
                             data=json.dumps(latest, indent=2, ensure_ascii=False),
@@ -1873,11 +2975,34 @@ elif display_page == "📁 Strategy Management":
                                 st.success("Deleted successfully")
                                 st.rerun()
                     
-                    # JSON content
+                    # JSON content - 使用白色主题显示
                     try:
                         with open(strategy['path'], 'r', encoding='utf-8') as f:
                             content = json.load(f)
-                        st.json(content)
+                        
+                        # 格式化JSON为字符串
+                        json_str = json.dumps(content, indent=2, ensure_ascii=False)
+                        
+                        # 使用自定义HTML显示，白色背景
+                        json_html = f"""
+                        <div style="
+                            border: 1px solid rgba(0, 0, 0, 0.1);
+                            border-radius: 8px;
+                            padding: 1rem;
+                            background: #FFFFFF;
+                            font-family: 'Courier New', monospace;
+                            font-size: 13px;
+                            line-height: 1.6;
+                            color: #1F2937;
+                            max-height: 500px;
+                            overflow-y: auto;
+                            white-space: pre-wrap;
+                            word-wrap: break-word;
+                        ">
+{json_str}
+                        </div>
+                        """
+                        st.markdown(json_html, unsafe_allow_html=True)
                     except Exception as e:
                         st.error(f"Failed to read file: {e}")
         
@@ -2007,7 +3132,7 @@ elif display_page == "📁 Strategy Management":
                 
                 # 显示对比表格
                 df_comparison = pd.DataFrame(comparison_data)
-                st.dataframe(df_comparison, use_container_width=True, hide_index=True)
+                st.table(df_comparison)
                 
                 # 显示信号权重对比
                 st.markdown("#### Signal Weights Comparison")
@@ -2030,7 +3155,7 @@ elif display_page == "📁 Strategy Management":
                     
                     # 也显示表格
                     with st.expander("View Signal Weights Table"):
-                        st.dataframe(signal_df, use_container_width=True)
+                        st.table(signal_df)
                 
                 # 下载对比报告
                 st.markdown("---")
@@ -2298,7 +3423,7 @@ elif display_page == "📁 Strategy Management":
                 status_color = status_colors.get(task.status, "#1F2937")
                 
                 with st.expander(
-                    f"{status_icon} {task.task_name} | <span style='color: {status_color}'>{task.status.upper()}</span> | Duration: {task.get_duration():.1f}s",
+                    f"{status_icon} {task.task_name} | {task.status.upper()} | Duration: {task.get_duration():.1f}s",
                     expanded=(task.status == "running")
                 ):
                     # 紧凑布局 - 使用表格形式
@@ -2321,15 +3446,28 @@ elif display_page == "📁 Strategy Management":
                                 del st.session_state.tasks[task_id]
                                 st.rerun()
                     
-                    # 实时日志 - 紧凑显示，不单独占大框（只在非完成状态显示，完成状态在报告后显示）
+                    # 实时日志 - 使用 checkbox 控制显示，避免自动刷新时关闭
                     if task.status != "completed":
                         logs = task.get_logs()
                         if logs:
                             display_logs = logs[-50:] if len(logs) > 50 else logs
                             log_text = "\n".join(display_logs)
                             
-                            # 紧凑的日志显示，与任务信息在同一区域
-                            with st.expander(f"📜 Logs ({len(display_logs)}/{len(logs)})", expanded=False):
+                            # 使用 session_state 保存显示状态
+                            log_show_key = f"custom_log_show_{task_id}"
+                            if log_show_key not in st.session_state:
+                                st.session_state[log_show_key] = False
+                            
+                            # 使用 checkbox 控制显示
+                            show_logs = st.checkbox(
+                                f"📜 Logs ({len(display_logs)}/{len(logs)})",
+                                value=st.session_state[log_show_key],
+                                key=f"custom_log_checkbox_{task_id}",
+                                help="Click to show/hide logs"
+                            )
+                            st.session_state[log_show_key] = show_logs
+                            
+                            if show_logs:
                                 col1, col2 = st.columns([4, 1])
                                 with col1:
                                     st.caption(f"Showing last {len(display_logs)} entries")
@@ -2344,7 +3482,27 @@ elif display_page == "📁 Strategy Management":
                                             key=f"custom_save_logs_{task_id}",
                                             use_container_width=True
                                         )
-                                st.code(log_text, language="log")
+                                
+                                # 使用纯文本显示，外部加边框
+                                log_html = f"""
+                                <div style="
+                                    border: 1px solid rgba(0, 0, 0, 0.1);
+                                    border-radius: 8px;
+                                    padding: 1rem;
+                                    background: #FFFFFF;
+                                    font-family: 'Courier New', monospace;
+                                    font-size: 13px;
+                                    line-height: 1.6;
+                                    color: #1F2937;
+                                    max-height: 500px;
+                                    overflow-y: auto;
+                                    white-space: pre-wrap;
+                                    word-wrap: break-word;
+                                ">
+{log_text}
+                                </div>
+                                """
+                                st.markdown(log_html, unsafe_allow_html=True)
                     
                     # 如果任务完成，显示生成的报告
                     if task.status == "completed":
@@ -2423,7 +3581,7 @@ elif display_page == "📁 Strategy Management":
                                 # 显示 CSV 预览
                                 try:
                                     df = pd.read_csv(report_csv)
-                                    st.dataframe(df, use_container_width=True)
+                                    st.table(df)
                                 except:
                                     pass
                             else:
@@ -2497,7 +3655,7 @@ elif display_page == "📁 Strategy Management":
                             if report_csv.exists():
                                 st.markdown("### 📋 Scan Results")
                                 df = pd.read_csv(report_csv)
-                                st.dataframe(df, use_container_width=True)
+                                st.table(df)
                             
                             # 显示交易详情表格（使用 iframe 渲染）
                             if report_html.exists():

@@ -1,0 +1,20 @@
+{
+  "NVDA": {
+    "symbol": "NVDA",
+    "strategy_name": "CCI_RSI_Volatility_Momentum",
+    "total_return": 0.17716158951023972,
+    "final_value": 11771.615895102397,
+    "num_trades": 6,
+    "win_rate": 16.666666666666664,
+    "last_updated": "2025-11-07 16:09:53"
+  },
+  "BABA": {
+    "symbol": "BABA",
+    "strategy_name": "Enhanced_MACD_RSI_BB",
+    "total_return": 1.950691896368521,
+    "final_value": 29506.91896368521,
+    "num_trades": 2,
+    "win_rate": 100.0,
+    "last_updated": "2025-11-07 16:10:16"
+  }
+}
