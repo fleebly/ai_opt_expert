@@ -966,9 +966,7 @@ if __name__ == "__main__":
     )
 
     if not df_results.empty:
-        print("\n" + "="*80)
-        print("🏆 最佳策略汇总")
-        print("="*80)
+        print("\n🏆 最佳策略汇总\n")
         # 打印每个标的的最佳策略
         for symbol in df_results['symbol'].unique():
             best = df_results[df_results['symbol'] == symbol].sort_values('total_return', ascending=False).iloc[0]
@@ -978,8 +976,6 @@ if __name__ == "__main__":
             print(f"  夏普比率: {best['sharpe_ratio']:.2f}")
             print(f"  胜率: {best['win_rate']:.1%}")
             print(f"  最大回撤: {best['max_drawdown']:.2%}")
-        print("\n" + "="*80)
-        print("📄 查看完整报告: open scan_report.html")
-        print("="*80 + "\n")
+        print("\n📄 查看完整报告: open scan_report.html\n")
     else:
         print("❌ 无有效回测结果")

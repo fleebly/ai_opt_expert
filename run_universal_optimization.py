@@ -220,9 +220,7 @@ class UniversalStrategyOptimizer:
         current_strategies = self._get_initial_strategies()
         
         for iteration in range(1, self.max_iterations + 1):
-            self.logger.info(f"\n{'='*80}")
-            self.logger.info(f"🔄 第 {iteration}/{self.max_iterations} 轮优化")
-            self.logger.info(f"{'='*80}")
+            self.logger.info(f"\n🔄 第 {iteration}/{self.max_iterations} 轮优化")
             
             iteration_best_score = -999
             iteration_best_strategy = None
@@ -611,9 +609,7 @@ def main():
         
         logger.info(f"优化完成 | 平均收益: {result.avg_return:+.2%} | 迭代: {result.total_iterations}")
         
-        print("\n" + "=" * 80)
-        print("🎉 优化完成！")
-        print("=" * 80)
+        print("\n🎉 优化完成！")
         print(f"\n🏆 最佳通用策略: {result.strategy_name}")
         print(f"🔄 总迭代轮数: {result.total_iterations}")
         print(f"\n📊 综合表现:")
@@ -675,8 +671,7 @@ def main():
         logger.info(f"通用策略已保存: {output_json}")
         print(f"\n💾 通用策略已保存至: {output_json}")
         print(f"\n📄 查看详细报告:")
-        print(f"   open {result.final_report}")
-        print("\n" + "=" * 80 + "\n")
+        print(f"   open {result.final_report}\n")
         
     except Exception as e:
         logger.exception("优化过程发生错误")

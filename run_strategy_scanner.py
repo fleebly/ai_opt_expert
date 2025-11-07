@@ -80,17 +80,12 @@ def main():
 
     args = parser.parse_args()
 
-    # 打印 banner
-    banner = f"""
-╔══════════════════════════════════════════════════════════════════════════╗
-║                                                                          ║
-║              🔍 策略扫描器                                                ║
-║              标的: {', '.join(args.symbols):<52}     ║
-║              周期: {args.start} → {args.end}                        ║
-║                                                                          ║
-╚══════════════════════════════════════════════════════════════════════════╝
-"""
-    print(banner)
+    # 打印 banner - 使用简单的分隔线，避免 Unicode 字符显示问题
+    print("=" * 80)
+    print(f"🔍 策略扫描器")
+    print(f"标的: {', '.join(args.symbols)}")
+    print(f"周期: {args.start} → {args.end}")
+    print("=" * 80)
     logger.info(f"开始扫描 {len(args.symbols)} 个标的")
 
     try:
@@ -131,9 +126,7 @@ def main():
         )
         
         if not df_results.empty:
-            print("\n" + "=" * 80)
-            print("🏆 扫描结果汇总")
-            print("=" * 80)
+            print("\n🏆 扫描结果汇总\n")
             
             # 显示每个标的的最佳策略
             for symbol in df_results['symbol'].unique():
@@ -148,11 +141,9 @@ def main():
                 
                 logger.info(f"{symbol}: 收益 {best['total_return']:+.2%}, 夏普 {best['sharpe_ratio']:.2f}, 胜率 {best['win_rate']:.1%}")
             
-            print("\n" + "=" * 80)
-            print(f"📄 报告已生成:")
+            print(f"\n📄 报告已生成:")
             print(f"   HTML: {args.output_html}")
-            print(f"   CSV:  {args.output_csv}")
-            print("\n" + "=" * 80 + "\n")
+            print(f"   CSV:  {args.output_csv}\n")
             
             logger.info("✅ 扫描完成")
             return 0

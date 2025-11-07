@@ -71,21 +71,16 @@ class IterativeOptimizer:
         Returns:
             优化结果字典
         """
-        self.logger.info("\n" + "="*80)
         self.logger.info("🚀 迭代策略优化器")
-        self.logger.info("="*80)
         self.logger.info(f"标的: {self.symbol}")
         self.logger.info(f"期间: {self.start_date} to {self.end_date}")
         self.logger.info(f"最大迭代: {self.max_iterations} 轮")
-        self.logger.info(f"收敛阈值: {self.convergence_threshold:.1%}")
-        self.logger.info("="*80 + "\n")
+        self.logger.info(f"收敛阈值: {self.convergence_threshold:.1%}\n")
         
         current_strategies = initial_strategies
         
         for iteration in range(1, self.max_iterations + 1):
-            self.logger.info(f"\n{'='*80}")
-            self.logger.info(f"🔄 第 {iteration}/{self.max_iterations} 轮迭代")
-            self.logger.info(f"{'='*80}\n")
+            self.logger.info(f"\n🔄 第 {iteration}/{self.max_iterations} 轮迭代\n")
             
             # 1. 运行回测
             backtest_results = self._run_backtest(current_strategies, iteration)
@@ -561,13 +556,10 @@ def main():
     
     result = optimizer.optimize()
     
-    print("\n" + "="*80)
-    print("✅ 优化完成！")
-    print("="*80)
+    print("\n✅ 优化完成！")
     print(f"\n最佳收益: {result['best_return']:+.2%}")
     print(f"总迭代轮数: {result['total_iterations']}")
-    print(f"最终报告: {result['final_report']}")
-    print("\n" + "="*80 + "\n")
+    print(f"最终报告: {result['final_report']}\n")
 
 
 if __name__ == '__main__':

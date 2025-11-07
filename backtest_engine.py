@@ -131,8 +131,30 @@ class OptionBacktest:
         # 1. 获取历史数据
         data = self._fetch_historical_data(symbol, start_date, end_date)
         if data is None or len(data) < 20:
-            logger.error("Insufficient data for backtest")
-            return BacktestResult()
+            logger.error(f"Insufficient data for backtest: {symbol} from {start_date} to {end_date}")
+            logger.error("   Possible reasons:")
+            logger.error("   1. No market data available for the date range")
+            logger.error("   2. Data fetching failed (check API key and network)")
+            logger.error("   3. Date range is invalid or too short")
+            logger.error("   4. Symbol may be delisted or not available")
+            # 返回一个包含基础权益曲线的结果，而不是完全空的结果
+            eq_df = pd.DataFrame([{'date': pd.to_datetime(start_date), 'equity': self.initial_capital}])
+            eq_df.set_index('date', inplace=True)
+            return BacktestResult(
+                trades=[],
+                initial_capital=self.initial_capital,
+                final_capital=self.initial_capital,
+                total_pnl=0.0,
+                total_return=0.0,
+                win_rate=0.0,
+                avg_win=0.0,
+                avg_loss=0.0,
+                max_drawdown=0.0,
+                sharpe_ratio=0.0,
+                num_trades=0,
+                daily_returns=pd.Series(dtype='float64'),
+                equity_curve=eq_df['equity'] if 'equity' in eq_df.columns else pd.Series(dtype='float64')
+            )
         
         # 2. 计算技术指标
         data = self._calculate_indicators(data)
@@ -620,7 +642,13 @@ class OptionBacktest:
                     return mid_price
             
             elif response.status_code == 403:
-                logger.warning("❌ Polygon 403: Option historical data requires Starter+ subscription")
+                logger.warning(f"❌ Polygon 403 Forbidden for {option_ticker}")
+                logger.warning("   Possible reasons:")
+                logger.warning("   1. API key doesn't have access to option historical data (requires Starter+ subscription)")
+                logger.warning("   2. API key is invalid or expired")
+                logger.warning("   3. API key quota exceeded")
+                logger.warning("   → Falling back to estimated option prices")
+                # 返回 None，让调用者使用估算价格
                 return None
             
             else:
@@ -699,24 +727,53 @@ class OptionBacktest:
     ) -> BacktestResult:
         """计算回测结果"""
         
+        # 即使没有交易，也要处理权益曲线
+        if not equity_curve:
+            logger.warning("⚠️ No equity curve data generated. This may indicate:")
+            logger.warning("   1. No market data available for the date range")
+            logger.warning("   2. Data fetching failed")
+            logger.warning("   3. Date range is invalid")
+            # 创建一个空的权益曲线，至少包含初始资金
+            equity_curve = [{'date': datetime.now().strftime('%Y-%m-%d'), 'equity': self.initial_capital}]
+        
+        # 权益曲线
+        eq_df = pd.DataFrame(equity_curve)
+        if eq_df.empty:
+            logger.warning("⚠️ Equity curve DataFrame is empty, using initial capital")
+            eq_df = pd.DataFrame([{'date': datetime.now().strftime('%Y-%m-%d'), 'equity': self.initial_capital}])
+        
+        eq_df['date'] = pd.to_datetime(eq_df['date'])
+        eq_df.set_index('date', inplace=True)
+        
+        # 如果没有交易，返回基础结果（包含权益曲线）
         if not trades:
-            return BacktestResult()
+            logger.info(f"ℹ️  No trades executed, but equity curve has {len(eq_df)} data points")
+            return BacktestResult(
+                trades=[],
+                initial_capital=self.initial_capital,
+                final_capital=self.current_capital,
+                total_pnl=0.0,
+                total_return=0.0,
+                win_rate=0.0,
+                avg_win=0.0,
+                avg_loss=0.0,
+                max_drawdown=0.0,
+                sharpe_ratio=0.0,
+                num_trades=0,
+                daily_returns=pd.Series(dtype='float64'),
+                equity_curve=eq_df['equity']
+            )
         
         # 基础统计
-        total_pnl = sum(t.pnl for t in trades)
+        total_pnl = sum(t.pnl for t in trades if t.pnl is not None)
         total_return = total_pnl / self.initial_capital
         
-        wins = [t for t in trades if t.pnl > 0]
-        losses = [t for t in trades if t.pnl < 0]
+        wins = [t for t in trades if t.pnl and t.pnl > 0]
+        losses = [t for t in trades if t.pnl and t.pnl < 0]
         
         win_rate = len(wins) / len(trades) if trades else 0
         avg_win = np.mean([t.pnl for t in wins]) if wins else 0
         avg_loss = np.mean([t.pnl for t in losses]) if losses else 0
-        
-        # 权益曲线
-        eq_df = pd.DataFrame(equity_curve)
-        eq_df['date'] = pd.to_datetime(eq_df['date'])
-        eq_df.set_index('date', inplace=True)
         
         # 最大回撤
         rolling_max = eq_df['equity'].expanding().max()
@@ -769,9 +826,7 @@ def main():
     )
     
     # 打印结果
-    print("\n" + "="*80)
-    print("📊 期权回测结果")
-    print("="*80 + "\n")
+    print("\n📊 期权回测结果\n")
     
     print(f"初始资金: ${result.initial_capital:,.0f}")
     print(f"最终资金: ${result.final_capital:,.0f}")
@@ -791,7 +846,6 @@ def main():
     print()
     
     print("最近5笔交易:")
-    print("-" * 90)
     for trade in result.trades[-5:]:
         print(f"\n交易: {trade.entry_date} → {trade.exit_date} | {trade.strategy.upper()}")
         print(f"  📈 入场: 股价 ${trade.entry_underlying:.2f} | 行权价 ${trade.strike:.0f} | 期权价 ${trade.entry_price:.2f}")
@@ -804,8 +858,6 @@ def main():
             print(f"  📊 标的变化: ${stock_change:+.2f} ({stock_change_pct:+.1f}%)")
         
         print(f"  💰 盈亏: ${trade.pnl:.2f} ({trade.pnl_pct:+.1%}) | {trade.status.upper()}")
-    
-    print("\n" + "="*80)
 
 
 if __name__ == '__main__':
