@@ -719,23 +719,7 @@ st.markdown("""
         display: none !important;
     }
     
-    /* Keep header visible so sidebar toggle button is accessible */
-    /* Don't hide the header - it contains the sidebar toggle button */
-    [data-testid='stHeader'] {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-    
-    /* Ensure header container is visible */
-    [data-testid='stHeader'] > div {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-    
-    /* Ensure sidebar toggle button is always visible and clickable */
-    /* Streamlit's sidebar toggle button is in the header, usually first button */
+    /* Hide sidebar collapse/toggle button - user doesn't want this functionality */
     button[aria-label*="sidebar"],
     button[title*="sidebar"],
     button[aria-label*="Open"],
@@ -743,44 +727,26 @@ st.markdown("""
     button[aria-label*="open"],
     button[aria-label*="close"],
     button[data-testid*="sidebar"],
-    /* Target the first button in header (usually sidebar toggle) */
     [data-testid='stHeader'] button:first-child,
     [data-testid='stHeader'] > div:first-child button,
-    /* Ensure all header buttons are visible (sidebar toggle is usually first) */
-    [data-testid='stHeader'] button {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        cursor: pointer !important;
-        z-index: 9999 !important;
-        position: relative !important;
-    }
-    
-    /* Ensure sidebar toggle button is visible even when sidebar is collapsed */
-    /* Streamlit places the toggle button in various locations */
     button[data-baseweb="button"][aria-label*="sidebar"],
     button[data-baseweb="button"][title*="sidebar"],
-    /* Target any button that might be the sidebar toggle */
     button[aria-label*="Open sidebar"],
     button[aria-label*="Close sidebar"],
     button[title*="Open sidebar"],
     button[title*="Close sidebar"],
-    /* Generic button selectors for sidebar toggle */
     button[class*="sidebar"],
-    /* Ensure buttons near the sidebar are visible */
     [data-testid="stAppViewContainer"] button:first-child,
-    /* Streamlit's sidebar toggle is usually at the top-left */
-    .stApp > header button,
-    /* Fallback: make sure any button in the app view container is visible if it's a toggle */
-    [data-testid="stAppViewContainer"] > div:first-child button {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        cursor: pointer !important;
-        z-index: 9999 !important;
-        position: relative !important;
+    .stApp > header button:first-child,
+    [data-testid="stAppViewContainer"] > div:first-child button:first-child {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
     
     /* Sidebar styling - white background, but allow collapse/expand */
@@ -794,7 +760,7 @@ st.markdown("""
         z-index: 100 !important;
     }
     
-    /* Default: sidebar should be visible (expanded state) */
+    /* Sidebar should always be visible - prevent collapse */
     section[data-testid='stSidebar'],
     [data-testid='stSidebar'] {
         display: block !important;
@@ -806,11 +772,13 @@ st.markdown("""
         transform: translateX(0) !important;
     }
     
-    /* When sidebar is collapsed (hidden), allow it to be hidden */
+    /* Prevent sidebar from being hidden - always keep it visible */
     section[data-testid='stSidebar'][aria-hidden="true"],
     [data-testid='stSidebar'][aria-hidden="true"] {
-        /* Allow Streamlit to hide it when collapsed */
-        display: none !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: translateX(0) !important;
     }
     
     [data-testid='stSidebar'] > div,
@@ -836,27 +804,7 @@ st.markdown("""
         opacity: 1 !important;
     }
     
-    /* Remove override rules that prevent collapse - allow Streamlit to control */
-    /* These rules were preventing the collapse button from working */
-    
-    /* Ensure collapse button is clickable and functional */
-    button[aria-label*="Close"],
-    button[aria-label*="Open"],
-    button[title*="Close"],
-    button[title*="Open"] {
-        pointer-events: auto !important;
-        cursor: pointer !important;
-        z-index: 999 !important;
-    }
-    
-    /* Ensure sidebar collapse button works */
-    [data-testid="stSidebar"] ~ button,
-    button[aria-label*="sidebar"],
-    button[title*="sidebar"] {
-        pointer-events: auto !important;
-        cursor: pointer !important;
-        z-index: 999 !important;
-    }
+    /* Sidebar collapse functionality disabled - buttons are hidden above */
     
     /* Main content area - already defined above */
     
@@ -1609,24 +1557,8 @@ st.markdown("""
     }
     
     // Ensure sidebar toggle button is always visible
-    function ensureSidebarButtonVisible() {
-        // First, ensure header is visible
-        const header = document.querySelector('[data-testid="stHeader"]');
-        if (header) {
-            header.style.display = 'flex';
-            header.style.visibility = 'visible';
-            header.style.opacity = '1';
-            
-            // Ensure header children are visible
-            const headerDivs = header.querySelectorAll('div');
-            headerDivs.forEach(div => {
-                div.style.display = 'flex';
-                div.style.visibility = 'visible';
-                div.style.opacity = '1';
-            });
-        }
-        
-        // Find all possible sidebar toggle buttons
+    function hideSidebarButton() {
+        // Hide all sidebar collapse/toggle buttons
         const selectors = [
             'button[aria-label*="sidebar"]',
             'button[title*="sidebar"]',
@@ -1634,9 +1566,9 @@ st.markdown("""
             'button[aria-label*="Close"]',
             'button[aria-label*="open"]',
             'button[aria-label*="close"]',
-            '[data-testid="stHeader"] button',
-            '.stApp > header button',
-            '[data-testid="stAppViewContainer"] > div:first-child button'
+            '[data-testid="stHeader"] button:first-child',
+            '.stApp > header button:first-child',
+            '[data-testid="stAppViewContainer"] > div:first-child button:first-child'
         ];
         
         selectors.forEach(selector => {
@@ -1648,41 +1580,21 @@ st.markdown("""
                     const title = button.getAttribute('title') || '';
                     const className = button.className || '';
                     
-                    // The first button in header is usually the sidebar toggle
-                    const isFirstButtonInHeader = header && header.querySelector('button') === button;
-                    
-                    if (isFirstButtonInHeader || 
-                        ariaLabel.toLowerCase().includes('sidebar') || 
+                    // Check if this is a sidebar toggle button
+                    if (ariaLabel.toLowerCase().includes('sidebar') || 
                         title.toLowerCase().includes('sidebar') ||
                         ariaLabel.toLowerCase().includes('open') ||
                         ariaLabel.toLowerCase().includes('close') ||
                         className.toLowerCase().includes('sidebar')) {
-                        // Make sure the button is visible
-                        button.style.display = 'block';
-                        button.style.visibility = 'visible';
-                        button.style.opacity = '1';
-                        button.style.pointerEvents = 'auto';
-                        button.style.cursor = 'pointer';
-                        button.style.zIndex = '9999';
-                        button.style.position = 'relative';
-                        
-                        // Also ensure its parent container is visible
-                        let parent = button.parentElement;
-                        let depth = 0;
-                        while (parent && parent !== document.body && depth < 5) {
-                            const computedStyle = window.getComputedStyle(parent);
-                            if (computedStyle.display === 'none') {
-                                parent.style.display = 'flex';
-                            }
-                            if (computedStyle.visibility === 'hidden') {
-                                parent.style.visibility = 'visible';
-                            }
-                            if (computedStyle.opacity === '0') {
-                                parent.style.opacity = '1';
-                }
-                parent = parent.parentElement;
-                            depth++;
-                        }
+                        // Hide the button
+                        button.style.display = 'none';
+                        button.style.visibility = 'hidden';
+                        button.style.opacity = '0';
+                        button.style.pointerEvents = 'none';
+                        button.style.width = '0';
+                        button.style.height = '0';
+                        button.style.padding = '0';
+                        button.style.margin = '0';
                     }
                 });
             } catch (e) {
@@ -1690,16 +1602,24 @@ st.markdown("""
             }
         });
         
-        // Also ensure the first button in header is always visible (usually sidebar toggle)
+        // Also hide the first button in header (usually sidebar toggle)
+        const header = document.querySelector('[data-testid="stHeader"]');
         if (header) {
-            const firstButton = header.querySelector('button');
+            const firstButton = header.querySelector('button:first-child');
             if (firstButton) {
-                firstButton.style.display = 'block';
-                firstButton.style.visibility = 'visible';
-                firstButton.style.opacity = '1';
-                firstButton.style.pointerEvents = 'auto';
-                firstButton.style.cursor = 'pointer';
-                firstButton.style.zIndex = '9999';
+                const ariaLabel = firstButton.getAttribute('aria-label') || '';
+                const title = firstButton.getAttribute('title') || '';
+                if (ariaLabel.toLowerCase().includes('sidebar') || 
+                    title.toLowerCase().includes('sidebar') ||
+                    ariaLabel.toLowerCase().includes('open') ||
+                    ariaLabel.toLowerCase().includes('close')) {
+                    firstButton.style.display = 'none';
+                    firstButton.style.visibility = 'hidden';
+                    firstButton.style.opacity = '0';
+                    firstButton.style.pointerEvents = 'none';
+                    firstButton.style.width = '0';
+                    firstButton.style.height = '0';
+                }
             }
         }
     }
@@ -1708,33 +1628,33 @@ st.markdown("""
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
             styleSidebar();
-            ensureSidebarButtonVisible();
+            hideSidebarButton();
         });
     } else {
         styleSidebar();
-        ensureSidebarButtonVisible();
+        hideSidebarButton();
     }
     
     // Run after Streamlit renders (multiple times to catch dynamic updates)
     setTimeout(function() {
         styleSidebar();
-        ensureSidebarButtonVisible();
+        hideSidebarButton();
     }, 100);
     
     setTimeout(function() {
         styleSidebar();
-        ensureSidebarButtonVisible();
+        hideSidebarButton();
     }, 500);
     
     setTimeout(function() {
         styleSidebar();
-        ensureSidebarButtonVisible();
+        hideSidebarButton();
     }, 1000);
     
     // Also run when the page is fully loaded
     window.addEventListener('load', function() {
         styleSidebar();
-        ensureSidebarButtonVisible();
+        hideSidebarButton();
     });
 })();
 </script>

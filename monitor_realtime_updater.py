@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
 实时监控数据更新器
-每15分钟从POLYGON获取最新数据，更新策略收益并写入结果文件
+每天早上 6:00 从POLYGON获取最新数据，更新策略收益并写入结果文件
 """
 
 import os
+import sys
 import json
 import time
+import signal
 import schedule
 import pandas as pd
 from pathlib import Path
@@ -362,20 +364,46 @@ def update_monitor_data():
 
 def run_scheduler():
     """运行定时任务调度器"""
+    # 设置信号处理，以便优雅退出
+    def signal_handler(sig, frame):
+        print("\n🛑 Received shutdown signal, stopping scheduler...")
+        print("✅ Scheduler stopped gracefully")
+        sys.exit(0)
+    
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    
     print("🚀 Starting real-time monitor updater...")
-    print("📅 Schedule: Every 15 minutes")
-    print("⏰ Next update will be in 15 minutes")
+    print("📅 Schedule: Daily at 06:00 (6:00 AM)")
+    print("⏰ Next update will be at 06:00 tomorrow")
+    print(f"🆔 Process ID: {os.getpid()}")
     
-    # 立即运行一次
-    update_monitor_data()
+    # 每天早上 6 点运行
+    schedule.every().day.at("06:00").do(update_monitor_data)
     
-    # 每15分钟运行一次
-    schedule.every(15).minutes.do(update_monitor_data)
+    # 计算到下次运行的时间
+    from datetime import time as dt_time
+    now = datetime.now()
+    next_run = datetime.combine(now.date(), dt_time(6, 0))
+    if next_run <= now:
+        # 如果今天 6 点已过，则设置为明天 6 点
+        next_run += timedelta(days=1)
+    time_until_next = (next_run - now).total_seconds() / 3600  # 转换为小时
+    print(f"⏳ Time until next update: {time_until_next:.1f} hours")
     
     # 保持运行
-    while True:
-        schedule.run_pending()
-        time.sleep(60)  # 每分钟检查一次
+    try:
+        while True:
+            schedule.run_pending()
+            time.sleep(60)  # 每分钟检查一次
+    except KeyboardInterrupt:
+        print("\n🛑 Keyboard interrupt received, stopping scheduler...")
+        sys.exit(0)
+    except Exception as e:
+        print(f"❌ Unexpected error in scheduler: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 if __name__ == "__main__":
     import sys
