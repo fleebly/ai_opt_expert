@@ -720,25 +720,53 @@ st.markdown("""
     }
     
     /* Hide sidebar collapse/toggle button - user doesn't want this functionality */
+    /* Only hide buttons that are specifically sidebar-related, not all buttons */
     button[aria-label*="sidebar"],
+    button[aria-label*="Sidebar"],
     button[title*="sidebar"],
-    button[aria-label*="Open"],
-    button[aria-label*="Close"],
-    button[aria-label*="open"],
-    button[aria-label*="close"],
-    button[data-testid*="sidebar"],
-    [data-testid='stHeader'] button:first-child,
-    [data-testid='stHeader'] > div:first-child button,
-    button[data-baseweb="button"][aria-label*="sidebar"],
-    button[data-baseweb="button"][title*="sidebar"],
+    button[title*="Sidebar"],
     button[aria-label*="Open sidebar"],
     button[aria-label*="Close sidebar"],
     button[title*="Open sidebar"],
     button[title*="Close sidebar"],
-    button[class*="sidebar"],
-    [data-testid="stAppViewContainer"] button:first-child,
-    .stApp > header button:first-child,
-    [data-testid="stAppViewContainer"] > div:first-child button:first-child {
+    button[data-testid*="sidebar"],
+    button[class*="sidebar"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* More specific: only hide header buttons that are sidebar toggles */
+    [data-testid='stHeader'] button[aria-label*="sidebar"],
+    [data-testid='stHeader'] button[aria-label*="Sidebar"],
+    [data-testid='stHeader'] button[title*="sidebar"],
+    [data-testid='stHeader'] button[title*="Sidebar"],
+    [data-testid='stHeader'] button[aria-label*="Open sidebar"],
+    [data-testid='stHeader'] button[aria-label*="Close sidebar"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Hide sidebar collapse button (<< icon button on sidebar) - only the collapse button, not navigation buttons */
+    [data-testid="stSidebar"] > div:first-child > button:first-child,
+    [data-testid="stSidebar"] > section:first-child > button:first-child,
+    section[data-testid="stSidebar"] > div:first-child > button:first-child,
+    /* Target button with collapse-related attributes */
+    [data-testid="stSidebar"] button[aria-label*="collapse"],
+    [data-testid="stSidebar"] button[aria-label*="Collapse"],
+    [data-testid="stSidebar"] button[title*="collapse"],
+    [data-testid="stSidebar"] button[title*="Collapse"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -892,6 +920,19 @@ st.markdown("""
         overflow: hidden !important;
         min-height: 2.25rem !important;
         line-height: 1.2 !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* Ensure form submit buttons are visible */
+    button[type="submit"],
+    [data-testid="stFormSubmitButton"] button,
+    form button[type="submit"] {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 100% !important;
     }
     
     button:hover {
@@ -3129,10 +3170,15 @@ elif display_page == "🚀 Strategy Optimization":
                             st.caption(f"Showing last {len(display_logs)} entries")
                         with col2:
                             if len(logs) > 50:
-                                # Store log data in session_state for download (outside form)
-                                download_key = f"download_logs_{task_id}"
-                                st.session_state[download_key] = "\n".join(logs)
-                                st.session_state[f"download_logs_file_{task_id}"] = f"{task_id}_logs.txt"
+                                # Download button inside expander, next to log display
+                                st.download_button(
+                                    "📥 Download Full Logs",
+                                    data="\n".join(logs),
+                                    file_name=f"{task_id}_logs.txt",
+                                    mime="text/plain",
+                                    key=f"opt_save_logs_{task_id}",
+                                    use_container_width=True
+                                )
                         
                         # 使用纯文本显示，外部加边框
                         log_html = f"""
@@ -3198,20 +3244,6 @@ elif display_page == "🚀 Strategy Optimization":
                             mime="application/json",
                             key=f"download_{task_id}"
                         )
-            
-            # Download logs button outside expander (and outside form)
-            download_key = f"download_logs_{task_id}"
-            if download_key in st.session_state:
-                logs = task.get_logs()
-                if logs and len(logs) > 50:
-                    st.download_button(
-                        "📥 Download Full Logs",
-                        data=st.session_state[download_key],
-                        file_name=st.session_state.get(f"download_logs_file_{task_id}", f"{task_id}_logs.txt"),
-                        mime="text/plain",
-                        key=f"opt_save_logs_{task_id}",
-                        use_container_width=True
-                    )
 
 
 # ==================== Strategy Management ====================

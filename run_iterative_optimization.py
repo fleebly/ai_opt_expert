@@ -20,7 +20,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Tuple
 
 # 添加项目路径
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+project_root = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, project_root)
+
+# Railway/Docker 环境：确保能找到模块（不影响本地运行）
+# 检查是否在 Docker 容器中（/app 目录存在）
+if os.path.exists('/app') and project_root == '/app':
+    # 已经在 /app 目录，PYTHONPATH 应该已经设置
+    # 但为了确保，再次添加到路径
+    if '/app' not in sys.path:
+        sys.path.insert(0, '/app')
 
 from iterative_optimizer import IterativeOptimizer
 
