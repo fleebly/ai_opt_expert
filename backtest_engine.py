@@ -128,6 +128,10 @@ class OptionBacktest:
         logger.info(f"Running backtest: {symbol} from {start_date} to {end_date}")
         logger.info(f"Strategy: {strategy}, Position size: {position_size:.1%}")
         
+        # Reset current capital to initial capital for each backtest run
+        # This ensures each strategy starts with the same initial capital
+        self.current_capital = self.initial_capital
+        
         # 1. 获取历史数据
         data = self._fetch_historical_data(symbol, start_date, end_date)
         if data is None or len(data) < 20:
@@ -385,6 +389,12 @@ class OptionBacktest:
                     
                     df['date'] = pd.to_datetime(df['t'], unit='ms')
                     df.set_index('date', inplace=True)
+                    
+                    # Debug: 打印实际获取的数据日期范围
+                    first_date = df.index[0].strftime('%Y-%m-%d')
+                    last_date = df.index[-1].strftime('%Y-%m-%d')
+                    logger.info(f"📊 Fetched data: {first_date} to {last_date} ({len(df)} days)")
+                    logger.info(f"   Requested: {start_date} to {end_date}")
                     
                     return df[['open', 'high', 'low', 'close', 'volume']]
             

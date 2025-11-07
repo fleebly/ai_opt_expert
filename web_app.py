@@ -719,9 +719,68 @@ st.markdown("""
         display: none !important;
     }
     
-    /* Hide Streamlit header actions */
+    /* Keep header visible so sidebar toggle button is accessible */
+    /* Don't hide the header - it contains the sidebar toggle button */
+    [data-testid='stHeader'] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* Ensure header container is visible */
     [data-testid='stHeader'] > div {
-        display: none !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* Ensure sidebar toggle button is always visible and clickable */
+    /* Streamlit's sidebar toggle button is in the header, usually first button */
+    button[aria-label*="sidebar"],
+    button[title*="sidebar"],
+    button[aria-label*="Open"],
+    button[aria-label*="Close"],
+    button[aria-label*="open"],
+    button[aria-label*="close"],
+    button[data-testid*="sidebar"],
+    /* Target the first button in header (usually sidebar toggle) */
+    [data-testid='stHeader'] button:first-child,
+    [data-testid='stHeader'] > div:first-child button,
+    /* Ensure all header buttons are visible (sidebar toggle is usually first) */
+    [data-testid='stHeader'] button {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        z-index: 9999 !important;
+        position: relative !important;
+    }
+    
+    /* Ensure sidebar toggle button is visible even when sidebar is collapsed */
+    /* Streamlit places the toggle button in various locations */
+    button[data-baseweb="button"][aria-label*="sidebar"],
+    button[data-baseweb="button"][title*="sidebar"],
+    /* Target any button that might be the sidebar toggle */
+    button[aria-label*="Open sidebar"],
+    button[aria-label*="Close sidebar"],
+    button[title*="Open sidebar"],
+    button[title*="Close sidebar"],
+    /* Generic button selectors for sidebar toggle */
+    button[class*="sidebar"],
+    /* Ensure buttons near the sidebar are visible */
+    [data-testid="stAppViewContainer"] button:first-child,
+    /* Streamlit's sidebar toggle is usually at the top-left */
+    .stApp > header button,
+    /* Fallback: make sure any button in the app view container is visible if it's a toggle */
+    [data-testid="stAppViewContainer"] > div:first-child button {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        z-index: 9999 !important;
+        position: relative !important;
     }
     
     /* Sidebar styling - white background, but allow collapse/expand */
@@ -731,39 +790,50 @@ st.markdown("""
     aside[data-testid='stSidebar'],
     [class*="css-"] section[data-testid='stSidebar'] {
         background: #FFFFFF !important;
-        /* Remove forced display/visibility to allow collapse */
-        /* display: block !important; */
-        /* visibility: visible !important; */
-        /* Allow Streamlit to control width for collapse */
-        /* width: 16rem !important; */
-        /* min-width: 16rem !important; */
-        /* max-width: 16rem !important; */
         position: relative !important;
         z-index: 100 !important;
-        /* Remove forced transform to allow collapse animation */
-        /* transform: translateX(0) !important; */
-        /* opacity: 1 !important; */
     }
     
-    /* When sidebar is expanded, set width */
-    section[data-testid='stSidebar']:not([aria-hidden="true"]) {
+    /* Default: sidebar should be visible (expanded state) */
+    section[data-testid='stSidebar'],
+    [data-testid='stSidebar'] {
+        display: block !important;
+        visibility: visible !important;
         width: 16rem !important;
         min-width: 16rem !important;
         max-width: 16rem !important;
+        opacity: 1 !important;
+        transform: translateX(0) !important;
+    }
+    
+    /* When sidebar is collapsed (hidden), allow it to be hidden */
+    section[data-testid='stSidebar'][aria-hidden="true"],
+    [data-testid='stSidebar'][aria-hidden="true"] {
+        /* Allow Streamlit to hide it when collapsed */
+        display: none !important;
     }
     
     [data-testid='stSidebar'] > div,
     [data-testid='stSidebar'] > section,
     [data-testid='stSidebar'] > div:first-child {
         background: #FFFFFF !important;
-        /* Allow Streamlit to control display */
-        /* display: block !important; */
-        /* visibility: visible !important; */
+        display: block !important;
+        visibility: visible !important;
         width: 100% !important;
     }
     
+    /* Ensure sidebar content is visible */
     [data-testid='stSidebar'] * {
         color: #1F2937 !important;
+    }
+    
+    /* Ensure sidebar navigation elements are visible */
+    [data-testid='stSidebar'] .element-container,
+    [data-testid='stSidebar'] .stMarkdown,
+    [data-testid='stSidebar'] .stRadio {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
     
     /* Remove override rules that prevent collapse - allow Streamlit to control */
@@ -1498,12 +1568,32 @@ st.markdown("""
 </style>
 <script>
 (function() {
-    // Only set background color, don't force visibility - allow Streamlit to control collapse/expand
+    // Set background color and ensure sidebar is visible when expanded
     function styleSidebar() {
         const sidebar = document.querySelector('section[data-testid="stSidebar"]');
         if (sidebar) {
-            // Only set background color, let Streamlit handle display/visibility/width
+            // Set background color
             sidebar.style.backgroundColor = '#FFFFFF';
+            
+            // Check if sidebar is hidden
+            const isHidden = sidebar.getAttribute('aria-hidden') === 'true';
+            const computedStyle = window.getComputedStyle(sidebar);
+            
+            // If sidebar is not explicitly hidden, ensure it's visible
+            if (!isHidden && computedStyle.display === 'none') {
+                sidebar.style.display = 'block';
+                sidebar.style.visibility = 'visible';
+                sidebar.style.opacity = '1';
+                sidebar.style.width = '16rem';
+                sidebar.style.minWidth = '16rem';
+                sidebar.style.maxWidth = '16rem';
+                sidebar.style.transform = 'translateX(0)';
+            } else if (!isHidden) {
+                // Ensure it's visible even if display is not none
+                sidebar.style.display = 'block';
+                sidebar.style.visibility = 'visible';
+                sidebar.style.opacity = '1';
+            }
             
             // Ensure child elements have white background too
             const children = sidebar.querySelectorAll('*');
@@ -1518,15 +1608,134 @@ st.markdown("""
         }
     }
     
-    // Run after DOM is ready to set background color
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', styleSidebar);
-    } else {
-        styleSidebar();
+    // Ensure sidebar toggle button is always visible
+    function ensureSidebarButtonVisible() {
+        // First, ensure header is visible
+        const header = document.querySelector('[data-testid="stHeader"]');
+        if (header) {
+            header.style.display = 'flex';
+            header.style.visibility = 'visible';
+            header.style.opacity = '1';
+            
+            // Ensure header children are visible
+            const headerDivs = header.querySelectorAll('div');
+            headerDivs.forEach(div => {
+                div.style.display = 'flex';
+                div.style.visibility = 'visible';
+                div.style.opacity = '1';
+            });
+        }
+        
+        // Find all possible sidebar toggle buttons
+        const selectors = [
+            'button[aria-label*="sidebar"]',
+            'button[title*="sidebar"]',
+            'button[aria-label*="Open"]',
+            'button[aria-label*="Close"]',
+            'button[aria-label*="open"]',
+            'button[aria-label*="close"]',
+            '[data-testid="stHeader"] button',
+            '.stApp > header button',
+            '[data-testid="stAppViewContainer"] > div:first-child button'
+        ];
+        
+        selectors.forEach(selector => {
+            try {
+                const buttons = document.querySelectorAll(selector);
+                buttons.forEach(button => {
+                    // Check if this might be a sidebar toggle button
+                    const ariaLabel = button.getAttribute('aria-label') || '';
+                    const title = button.getAttribute('title') || '';
+                    const className = button.className || '';
+                    
+                    // The first button in header is usually the sidebar toggle
+                    const isFirstButtonInHeader = header && header.querySelector('button') === button;
+                    
+                    if (isFirstButtonInHeader || 
+                        ariaLabel.toLowerCase().includes('sidebar') || 
+                        title.toLowerCase().includes('sidebar') ||
+                        ariaLabel.toLowerCase().includes('open') ||
+                        ariaLabel.toLowerCase().includes('close') ||
+                        className.toLowerCase().includes('sidebar')) {
+                        // Make sure the button is visible
+                        button.style.display = 'block';
+                        button.style.visibility = 'visible';
+                        button.style.opacity = '1';
+                        button.style.pointerEvents = 'auto';
+                        button.style.cursor = 'pointer';
+                        button.style.zIndex = '9999';
+                        button.style.position = 'relative';
+                        
+                        // Also ensure its parent container is visible
+                        let parent = button.parentElement;
+                        let depth = 0;
+                        while (parent && parent !== document.body && depth < 5) {
+                            const computedStyle = window.getComputedStyle(parent);
+                            if (computedStyle.display === 'none') {
+                                parent.style.display = 'flex';
+                            }
+                            if (computedStyle.visibility === 'hidden') {
+                                parent.style.visibility = 'visible';
+                            }
+                            if (computedStyle.opacity === '0') {
+                                parent.style.opacity = '1';
+                }
+                parent = parent.parentElement;
+                            depth++;
+                        }
+                    }
+                });
+            } catch (e) {
+                // Ignore selector errors
+            }
+        });
+        
+        // Also ensure the first button in header is always visible (usually sidebar toggle)
+        if (header) {
+            const firstButton = header.querySelector('button');
+            if (firstButton) {
+                firstButton.style.display = 'block';
+                firstButton.style.visibility = 'visible';
+                firstButton.style.opacity = '1';
+                firstButton.style.pointerEvents = 'auto';
+                firstButton.style.cursor = 'pointer';
+                firstButton.style.zIndex = '9999';
+            }
+        }
     }
     
-    // Run after Streamlit renders
-    setTimeout(styleSidebar, 100);
+    // Run after DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            styleSidebar();
+            ensureSidebarButtonVisible();
+        });
+    } else {
+        styleSidebar();
+        ensureSidebarButtonVisible();
+    }
+    
+    // Run after Streamlit renders (multiple times to catch dynamic updates)
+    setTimeout(function() {
+        styleSidebar();
+        ensureSidebarButtonVisible();
+    }, 100);
+    
+    setTimeout(function() {
+        styleSidebar();
+        ensureSidebarButtonVisible();
+    }, 500);
+    
+    setTimeout(function() {
+        styleSidebar();
+        ensureSidebarButtonVisible();
+    }, 1000);
+    
+    // Also run when the page is fully loaded
+    window.addEventListener('load', function() {
+        styleSidebar();
+        ensureSidebarButtonVisible();
+    });
 })();
 </script>
 """, unsafe_allow_html=True)
@@ -2085,8 +2294,13 @@ elif display_page == "📈 Real-time Monitor":
     </style>
     """, unsafe_allow_html=True)
     
-    # Configuration
-    monitor_start_date = "2025-04-01"
+    # Configuration - Allow user to select start date
+    # Default start date
+    default_start_date = datetime(2025, 4, 1).date()
+    
+    # Get saved start date from session state or use default
+    if 'monitor_start_date_selected' not in st.session_state:
+        st.session_state.monitor_start_date_selected = default_start_date
     
     # Initialize persistent cache
     cache_manager = MonitorCache()
@@ -2105,25 +2319,197 @@ elif display_page == "📈 Real-time Monitor":
         except:
             pass
     
-    # Header with real-time indicator - compact layout
-    col1, col2, col3 = st.columns([2.5, 1, 1])
+    # Header with date picker and real-time indicator - compact layout
+    col1, col2, col3, col4 = st.columns([2, 1.5, 1, 1])
     with col1:
+        # Date picker for start date
+        selected_start_date = st.date_input(
+            "📅 Monitoring Start Date",
+            value=st.session_state.monitor_start_date_selected,
+            min_value=datetime(2020, 1, 1).date(),
+            max_value=datetime.now().date(),
+            key="monitor_start_date_picker",
+            help="Select the start date for calculating returns. Only trades after this date will be included."
+        )
+        st.session_state.monitor_start_date_selected = selected_start_date
+        monitor_start_date = selected_start_date.strftime('%Y-%m-%d')
+    
+    with col2:
         # Compact status display
         status_html = f"""
-        <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: #F9FAFB; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); margin-bottom: 0.5rem;">
-            <span style="font-size: 1rem;">📅 <strong>Monitoring Period:</strong> {monitor_start_date} to <strong>Today</strong></span>
-            {f'<span style="color: #666; margin-left: 0.5rem;">| 🕐 <strong>Last Update:</strong> {last_update_time}</span>' if last_update_time else ''}
+        <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: #F9FAFB; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); margin-top: 1.5rem;">
+            <span style="font-size: 0.9rem;">📅 <strong>{monitor_start_date}</strong> to <strong>Today</strong></span>
+            {f'<span style="color: #666; margin-left: 0.5rem; font-size: 0.85rem;">| 🕐 {last_update_time}</span>' if last_update_time else ''}
         </div>
         """
         st.markdown(status_html, unsafe_allow_html=True)
-    with col2:
+    with col3:
         # Real-time indicator with pulsing effect
         auto_refresh = st.checkbox("🔄 Auto Refresh", value=True, key="monitor_auto_refresh")
-    with col3:
+    with col4:
         if st.button("🔄 Manual Update", use_container_width=True, key="monitor_update_btn"):
             # Force update for all symbols
             st.session_state['force_update'] = True
             st.rerun()
+    
+    # Function to filter trades and recalculate returns based on start date
+    def filter_trades_and_recalculate(result, start_date_str):
+        """Filter trades by start date and recalculate metrics"""
+        initial_capital = 10000.0
+        start_date = pd.to_datetime(start_date_str)
+        
+        # Get trades
+        trades = result.get('trades', [])
+        if not trades:
+            # No trades, return original result with adjusted equity curve
+            equity_curve = result.get('equity_curve', pd.Series([initial_capital], index=[pd.to_datetime(start_date)]))
+            return {
+                **result,
+                'total_return': 0.0,
+                'final_value': initial_capital,
+                'num_trades': 0,
+                'win_rate': 0.0,
+                'trades': [],
+                'equity_curve': equity_curve
+            }
+        
+        # Filter trades: only include trades that started on or after start_date
+        filtered_trades = []
+        for trade in trades:
+            entry_date_str = trade.get('entry_date')
+            if entry_date_str:
+                entry_date = pd.to_datetime(entry_date_str)
+                if entry_date >= start_date:
+                    filtered_trades.append(trade)
+        
+        # Recalculate metrics based on filtered trades
+        if not filtered_trades:
+            # No trades after start date
+            equity_curve = result.get('equity_curve', pd.Series([initial_capital], index=[pd.to_datetime(start_date)]))
+            return {
+                **result,
+                'total_return': 0.0,
+                'final_value': initial_capital,
+                'num_trades': 0,
+                'win_rate': 0.0,
+                'trades': [],
+                'equity_curve': equity_curve
+            }
+        
+        # Calculate cumulative PnL from filtered trades
+        total_pnl = sum(t.get('pnl', 0) or 0 for t in filtered_trades)
+        final_value = initial_capital + total_pnl
+        total_return = (final_value - initial_capital) / initial_capital
+        
+        # Calculate win rate
+        closed_trades = [t for t in filtered_trades if t.get('status') == 'closed' and t.get('pnl') is not None]
+        if closed_trades:
+            winning_trades = sum(1 for t in closed_trades if t.get('pnl', 0) > 0)
+            win_rate = (winning_trades / len(closed_trades) * 100) if closed_trades else 0.0
+        else:
+            win_rate = 0.0
+        
+        # Filter and rebuild equity curve from start_date
+        equity_curve_original = result.get('equity_curve')
+        start_date_dt = pd.to_datetime(start_date)
+        
+        if equity_curve_original is not None:
+            # Convert to Series if needed
+            if isinstance(equity_curve_original, pd.Series):
+                equity_series = equity_curve_original.copy()
+            elif isinstance(equity_curve_original, list):
+                # Convert list of {date, value} dicts to Series
+                dates = [item['date'] for item in equity_curve_original]
+                values = [item['value'] for item in equity_curve_original]
+                equity_series = pd.Series(values, index=pd.to_datetime(dates))
+            else:
+                equity_series = pd.Series([initial_capital], index=[start_date_dt])
+            
+            # Ensure index is DatetimeIndex
+            if not isinstance(equity_series.index, pd.DatetimeIndex):
+                equity_series.index = pd.to_datetime(equity_series.index)
+            
+            # Filter equity curve to ONLY include data from start_date onwards
+            equity_series = equity_series[equity_series.index >= start_date_dt]
+            
+            # If no data at or after start_date, create a new series starting from start_date
+            if len(equity_series) == 0:
+                # No data after start_date, create series with just initial capital
+                equity_series = pd.Series([initial_capital], index=[start_date_dt])
+            else:
+                # We have data after start_date
+                # Get the value just before start_date to calculate the adjustment
+                # Find the last value before start_date from original data
+                if isinstance(equity_curve_original, pd.Series):
+                    before_start_series = equity_curve_original.copy()
+                elif isinstance(equity_curve_original, list):
+                    dates = [item['date'] for item in equity_curve_original]
+                    values = [item['value'] for item in equity_curve_original]
+                    before_start_series = pd.Series(values, index=pd.to_datetime(dates))
+                else:
+                    before_start_series = pd.Series([initial_capital], index=[start_date_dt])
+                
+                if not isinstance(before_start_series.index, pd.DatetimeIndex):
+                    before_start_series.index = pd.to_datetime(before_start_series.index)
+                
+                # Get value just before start_date
+                before_start_data = before_start_series[before_start_series.index < start_date_dt]
+                if len(before_start_data) > 0:
+                    value_before_start = before_start_data.iloc[-1]
+                    # Adjust all values by the difference to start from initial_capital
+                    adjustment = initial_capital - value_before_start
+                    equity_series = equity_series + adjustment
+                else:
+                    # No data before start_date, use initial_capital as starting point
+                    # Adjust first value to initial_capital
+                    first_value = equity_series.iloc[0]
+                    adjustment = initial_capital - first_value
+                    equity_series = equity_series + adjustment
+                
+                # Ensure we have a point at start_date
+                if equity_series.index[0] > start_date_dt:
+                    # Insert initial capital at start_date
+                    equity_series = pd.concat([
+                        pd.Series([initial_capital], index=[start_date_dt]),
+                        equity_series
+                    ]).sort_index()
+                else:
+                    # Update the first value to initial_capital
+                    equity_series.iloc[0] = initial_capital
+        else:
+            # No original equity curve, create new one from filtered trades
+            equity_series = pd.Series([initial_capital], index=[start_date_dt])
+            
+            # Add points for filtered trades
+            if filtered_trades:
+                sorted_trades = sorted(filtered_trades, key=lambda t: pd.to_datetime(t.get('entry_date', start_date)))
+                current_value = initial_capital
+                
+                for trade in sorted_trades:
+                    entry_date = pd.to_datetime(trade.get('entry_date', start_date))
+                    exit_date = trade.get('exit_date')
+                    pnl = trade.get('pnl', 0) or 0
+                    
+                    if exit_date:
+                        exit_date = pd.to_datetime(exit_date)
+                        current_value += pnl
+                        # Add both entry and exit points
+                        if entry_date >= start_date_dt:
+                            equity_series[entry_date] = current_value - pnl
+                        if exit_date >= start_date_dt:
+                            equity_series[exit_date] = current_value
+                
+                equity_series = equity_series.sort_index()
+        
+        return {
+            **result,
+            'total_return': total_return,
+            'final_value': final_value,
+            'num_trades': len(filtered_trades),
+            'win_rate': win_rate,
+            'trades': filtered_trades,
+            'equity_curve': equity_series
+        }
     
     # Try to load from saved results file first
     saved_results_file = Path("monitor_results.json")
@@ -2197,7 +2583,7 @@ elif display_page == "📈 Real-time Monitor":
                         # Check if we need to update (once per day)
                         needs_update = cache_manager.needs_update(symbol) or force_update
                         
-                        # Load cached data
+                        # Load cached data first
                         cached_data = cache_manager.get_symbol_data(symbol)
                         equity_curve_series = cache_manager.get_equity_curve_series(symbol)
                         
@@ -2318,14 +2704,20 @@ elif display_page == "📈 Real-time Monitor":
                         import traceback
                         st.code(traceback.format_exc())
                         continue
-            
+        
             # Clear force update flag
             if force_update:
                 st.session_state['force_update'] = False
-            
-            # Sort by return (best first)
+        
+        # Sort by return (best first)
             if monitor_results:
                 monitor_results.sort(key=lambda x: x['total_return'], reverse=True)
+        
+    # Apply date filter and recalculate metrics based on selected start date
+    if monitor_results:
+        monitor_results = [filter_trades_and_recalculate(result, monitor_start_date) for result in monitor_results]
+        # Re-sort by return after filtering
+        monitor_results.sort(key=lambda x: x['total_return'], reverse=True)
         
     # Display results (whether from saved file or cache)
     if monitor_results:
@@ -2459,6 +2851,15 @@ elif display_page == "📈 Real-time Monitor":
             # Check if equity_curve exists and is not empty
             equity_curve = result.get('equity_curve')
             if equity_curve is not None:
+                # Get the selected start date for filtering
+                selected_start_date = st.session_state.get('monitor_start_date_selected', default_start_date)
+                if isinstance(selected_start_date, str):
+                    selected_start_date_dt = pd.to_datetime(selected_start_date)
+                elif hasattr(selected_start_date, 'strftime'):
+                    selected_start_date_dt = pd.to_datetime(selected_start_date)
+                else:
+                    selected_start_date_dt = pd.to_datetime(selected_start_date)
+                
                 # Convert to Series if it's not already
                 if isinstance(equity_curve, pd.Series):
                     equity_series = equity_curve.copy()
@@ -2473,12 +2874,16 @@ elif display_page == "📈 Real-time Monitor":
                         df = pd.DataFrame(equity_curve)
                         df['date'] = pd.to_datetime(df['date'])
                         df = df.sort_values('date')
+                        # Filter to only include dates >= selected_start_date
+                        df = df[df['date'] >= selected_start_date_dt]
                         dates = df['date']
                         values = df['value']
                     else:
                         # Ensure index is datetime
                         if not isinstance(equity_series.index, pd.DatetimeIndex):
                             equity_series.index = pd.to_datetime(equity_series.index)
+                        # Filter to only include dates >= selected_start_date
+                        equity_series = equity_series[equity_series.index >= selected_start_date_dt]
                         dates = equity_series.index
                         values = equity_series.values
                     
@@ -2518,6 +2923,15 @@ elif display_page == "📈 Real-time Monitor":
                     )
                     
                     # Update layout for white background theme
+                    # Ensure dates start from selected start date (already filtered above)
+                    if len(dates) > 0:
+                        min_date = pd.to_datetime(dates).min()
+                        max_date = pd.to_datetime(dates).max()
+                    else:
+                        # No data, use selected start date
+                        min_date = selected_start_date_dt
+                        max_date = selected_start_date_dt + pd.Timedelta(days=1)
+                    
                     fig.update_layout(
                         title={
                             'text': f'{result["symbol"]} Equity Curve',
@@ -2529,7 +2943,8 @@ elif display_page == "📈 Real-time Monitor":
                             title=dict(text='Date', font=dict(color='#1F2937')),
                             tickfont=dict(color='#1F2937'),
                             gridcolor='rgba(0,0,0,0.1)',
-                            showgrid=True
+                            showgrid=True,
+                            range=[min_date, max_date]  # Set x-axis range to start from selected date
                         ),
                         yaxis=dict(
                             title=dict(text='Portfolio Value ($)', font=dict(color='#1F2937')),
@@ -2794,15 +3209,10 @@ elif display_page == "🚀 Strategy Optimization":
                             st.caption(f"Showing last {len(display_logs)} entries")
                         with col2:
                             if len(logs) > 50:
-                                full_log_text = "\n".join(logs)
-                                st.download_button(
-                                    "📥 Download",
-                                    data=full_log_text,
-                                    file_name=f"{task_id}_logs.txt",
-                                    mime="text/plain",
-                                    key=f"opt_save_logs_{task_id}",
-                                    use_container_width=True
-                                )
+                                # Store log data in session_state for download (outside form)
+                                download_key = f"download_logs_{task_id}"
+                                st.session_state[download_key] = "\n".join(logs)
+                                st.session_state[f"download_logs_file_{task_id}"] = f"{task_id}_logs.txt"
                         
                         # 使用纯文本显示，外部加边框
                         log_html = f"""
@@ -2868,6 +3278,20 @@ elif display_page == "🚀 Strategy Optimization":
                             mime="application/json",
                             key=f"download_{task_id}"
                         )
+            
+            # Download logs button outside expander (and outside form)
+            download_key = f"download_logs_{task_id}"
+            if download_key in st.session_state:
+                logs = task.get_logs()
+                if logs and len(logs) > 50:
+                    st.download_button(
+                        "📥 Download Full Logs",
+                        data=st.session_state[download_key],
+                        file_name=st.session_state.get(f"download_logs_file_{task_id}", f"{task_id}_logs.txt"),
+                        mime="text/plain",
+                        key=f"opt_save_logs_{task_id}",
+                        use_container_width=True
+                    )
 
 
 # ==================== Strategy Management ====================

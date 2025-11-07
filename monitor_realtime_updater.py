@@ -142,27 +142,114 @@ def update_monitor_data():
             
             # 更新收益曲线
             if len(result.equity_curve) > 0:
-                # 获取完整的收益曲线（从监控开始日期）
-                try:
-                    full_result = backtest.run_backtest(
-                        symbol=symbol,
-                        start_date=monitor_start_date,
-                        end_date=end_date,
-                        strategy='auto',
-                        entry_signal=signal_weights,
-                        profit_target=params.get('profit_target', 5.0),
-                        stop_loss=params.get('stop_loss', -0.5),
-                        max_holding_days=params.get('max_holding_days', 30),
-                        position_size=params.get('position_size', 0.1)
-                    )
-                except Exception as e:
-                    print(f"  ⚠️  Error getting full equity curve for {symbol}: {str(e)}")
-                    print(f"     Using partial result instead")
-                    full_result = result
+                # 优先从缓存读取完整的收益曲线，而不是重新运行完整回测
+                # 这样可以避免因为 API 数据限制导致的数据回退
+                cached_equity_series = cache_manager.get_equity_curve_series(symbol)
+                
+                if cached_equity_series is not None and len(cached_equity_series) > 0:
+                    # 使用缓存中的数据作为基础，但需要运行完整回测来获取所有 trades
+                    print(f"  📊 Using cached equity curve ({len(cached_equity_series)} points)")
+                    print(f"     Running full backtest to get all trades...")
+                    
+                    # 运行完整回测以获取所有 trades
+                    try:
+                        full_backtest_result = backtest.run_backtest(
+                            symbol=symbol,
+                            start_date=monitor_start_date,
+                            end_date=end_date,
+                            strategy='auto',
+                            entry_signal=signal_weights,
+                            profit_target=params.get('profit_target', 5.0),
+                            stop_loss=params.get('stop_loss', -0.5),
+                            max_holding_days=params.get('max_holding_days', 30),
+                            position_size=params.get('position_size', 0.1)
+                        )
+                        
+                        # 使用缓存的 equity_curve，但使用完整回测的 trades
+                        # 合并新的数据点到缓存的 equity_curve
+                        new_equity_series = result.equity_curve
+                        if isinstance(new_equity_series.index, pd.DatetimeIndex):
+                            # 合并缓存数据和新数据
+                            combined_series = pd.concat([cached_equity_series, new_equity_series])
+                            combined_series = combined_series[~combined_series.index.duplicated(keep='last')]
+                            combined_series = combined_series.sort_index()
+                            
+                            # 创建一个模拟的 full_result 对象，使用缓存的 equity_curve 和完整回测的 trades
+                            class MockResult:
+                                def __init__(self, equity_curve, trades):
+                                    self.equity_curve = equity_curve
+                                    self.trades = trades
+                            
+                            full_result = MockResult(combined_series, full_backtest_result.trades)
+                        else:
+                            # 如果新数据不是 DatetimeIndex，使用缓存数据
+                            class MockResult:
+                                def __init__(self, equity_curve, trades):
+                                    self.equity_curve = equity_curve
+                                    self.trades = trades
+                            
+                            full_result = MockResult(cached_equity_series, full_backtest_result.trades)
+                    except Exception as e:
+                        print(f"  ⚠️  Error running full backtest for trades: {str(e)}")
+                        print(f"     Using cached equity curve and partial result")
+                        # 如果完整回测失败，使用缓存数据和部分结果
+                        new_equity_series = result.equity_curve
+                        if isinstance(new_equity_series.index, pd.DatetimeIndex):
+                            combined_series = pd.concat([cached_equity_series, new_equity_series])
+                            combined_series = combined_series[~combined_series.index.duplicated(keep='last')]
+                            combined_series = combined_series.sort_index()
+                            
+                            class MockResult:
+                                def __init__(self, equity_curve, trades):
+                                    self.equity_curve = equity_curve
+                                    self.trades = trades
+                            
+                            full_result = MockResult(combined_series, result.trades if hasattr(result, 'trades') else [])
+                        else:
+                            class MockResult:
+                                def __init__(self, equity_curve, trades):
+                                    self.equity_curve = equity_curve
+                                    self.trades = trades
+                            
+                            full_result = MockResult(cached_equity_series, result.trades if hasattr(result, 'trades') else [])
+                else:
+                    # 缓存中没有数据，运行完整回测
+                    print(f"  📊 No cached data, running full backtest...")
+                    try:
+                        full_result = backtest.run_backtest(
+                            symbol=symbol,
+                            start_date=monitor_start_date,
+                            end_date=end_date,
+                            strategy='auto',
+                            entry_signal=signal_weights,
+                            profit_target=params.get('profit_target', 5.0),
+                            stop_loss=params.get('stop_loss', -0.5),
+                            max_holding_days=params.get('max_holding_days', 30),
+                            position_size=params.get('position_size', 0.1)
+                        )
+                        
+                        # 检查返回的数据是否只到 08-31（可能是 API 数据限制）
+                        if isinstance(full_result.equity_curve.index, pd.DatetimeIndex):
+                            last_date = full_result.equity_curve.index[-1].strftime('%Y-%m-%d')
+                            if last_date <= '2025-08-31' and end_date > '2025-08-31':
+                                print(f"  ⚠️  Warning: API returned data only to {last_date}, but requested end_date is {end_date}")
+                                print(f"     This may indicate API data limitation. Using partial result instead.")
+                                # 使用部分结果，不要覆盖可能已经更新的数据
+                                full_result = result
+                    except Exception as e:
+                        print(f"  ⚠️  Error getting full equity curve for {symbol}: {str(e)}")
+                        print(f"     Using partial result instead")
+                        full_result = result
                 
                 # 更新缓存中的收益曲线
                 # equity_curve 是一个 pandas Series，索引是日期
                 if isinstance(full_result.equity_curve.index, pd.DatetimeIndex):
+                    # Debug: 打印日期范围
+                    first_date = full_result.equity_curve.index[0].strftime('%Y-%m-%d')
+                    last_date = full_result.equity_curve.index[-1].strftime('%Y-%m-%d')
+                    print(f"  📊 Equity curve date range: {first_date} to {last_date} ({len(full_result.equity_curve)} points)")
+                    print(f"     Requested end_date: {end_date}")
+                    
                     # 遍历 Series 的日期索引和值
                     for date_idx, value in full_result.equity_curve.items():
                         date_str = date_idx.strftime('%Y-%m-%d')
@@ -186,7 +273,8 @@ def update_monitor_data():
                 winning_trades = sum(1 for t in full_result.trades if t.pnl and t.pnl > 0)
                 win_rate = (winning_trades / num_trades * 100) if num_trades > 0 else 0
                 
-                # 保存到缓存
+                # 保存到缓存 - 保留已有的 equity_curve 数据
+                existing_cached_data = cache_manager.get_symbol_data(symbol)
                 cached_data = {
                     'symbol': symbol,
                     'strategy_name': strategy['name'],
@@ -196,6 +284,9 @@ def update_monitor_data():
                     'win_rate': win_rate,
                     'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 }
+                # 保留已有的 equity_curve 数据（如果存在）
+                if existing_cached_data and 'equity_curve' in existing_cached_data:
+                    cached_data['equity_curve'] = existing_cached_data['equity_curve']
                 cache_manager.save_symbol_data(symbol, cached_data)
                 
                 # 准备结果数据 - 使用与缓存更新相同的逻辑，正确处理 DatetimeIndex

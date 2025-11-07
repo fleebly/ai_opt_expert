@@ -27,7 +27,8 @@ class MultiStrategyBacktester:
     def __init__(self, initial_capital: float = 10000.0):
         """初始化"""
         self.initial_capital = initial_capital
-        self.backtest_engine = OptionBacktest(initial_capital=initial_capital)
+        # Don't create backtest_engine here - create a new one for each strategy
+        # to ensure complete isolation between backtests
         self.signal_library = SignalLibrary
     
     def _generate_strategy_combinations(self, signal_defs: Dict) -> Dict[str, Dict[str, float]]:
@@ -87,8 +88,15 @@ class MultiStrategyBacktester:
         
         for strategy_name, signal_weights in strategies.items():
             try:
+                # Create a new backtest engine instance for each strategy
+                # This ensures each strategy starts with fresh initial capital
+                backtest_engine = OptionBacktest(
+                    initial_capital=self.initial_capital,
+                    use_real_prices=True
+                )
+                
                 # 运行回测
-                backtest_result = self.backtest_engine.run_backtest(
+                backtest_result = backtest_engine.run_backtest(
                     symbol=symbol,
                     start_date=start_date,
                     end_date=end_date,
