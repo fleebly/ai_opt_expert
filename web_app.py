@@ -28,7 +28,7 @@ from monitor_cache import MonitorCache
 
 # 页面配置
 st.set_page_config(
-    page_title="量化交易策略管理平台",
+    page_title="QuantFlow",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"  # Show sidebar for navigation
