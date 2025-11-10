@@ -758,7 +758,7 @@ st.markdown("""
         margin: 0 !important;
     }
     
-    /* Hide sidebar collapse button (<< icon button on sidebar) - only the collapse button, not navigation buttons */
+    /* Hide sidebar collapse button (<< icon button on sidebar) - 完全隐藏侧边栏收缩按钮 */
     [data-testid="stSidebar"] > div:first-child > button:first-child,
     [data-testid="stSidebar"] > section:first-child > button:first-child,
     section[data-testid="stSidebar"] > div:first-child > button:first-child,
@@ -766,7 +766,14 @@ st.markdown("""
     [data-testid="stSidebar"] button[aria-label*="collapse"],
     [data-testid="stSidebar"] button[aria-label*="Collapse"],
     [data-testid="stSidebar"] button[title*="collapse"],
-    [data-testid="stSidebar"] button[title*="Collapse"] {
+    [data-testid="stSidebar"] button[title*="Collapse"],
+    /* 更通用的选择器，隐藏侧边栏顶部的所有按钮（通常是收缩按钮） */
+    [data-testid="stSidebar"] > div:first-child button,
+    [data-testid="stSidebar"] > section:first-child button,
+    section[data-testid="stSidebar"] > div:first-child button,
+    /* 隐藏包含 << 图标的按钮 */
+    [data-testid="stSidebar"] button[class*="chevron"],
+    [data-testid="stSidebar"] button svg[viewBox*="24"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -775,6 +782,8 @@ st.markdown("""
         height: 0 !important;
         padding: 0 !important;
         margin: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
     }
     
     /* Sidebar styling - white background, but allow collapse/expand */
@@ -958,16 +967,19 @@ st.markdown("""
         border-color: rgba(99, 102, 241, 0.3) !important;
     }
     
-    /* Plotly toolbar buttons - match white theme */
-    .modebar {
-        background: #FFFFFF !important;
-        border: 1px solid rgba(0, 0, 0, 0.1) !important;
-        border-radius: 8px !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-    }
-    
-    .modebar-group {
-        background: #FFFFFF !important;
+    /* Plotly toolbar buttons - 完全隐藏工具栏 */
+    .modebar,
+    .modebar-container,
+    .modebar-group,
+    .modebar-btn {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
     
     .modebar-btn {
@@ -995,14 +1007,31 @@ st.markdown("""
         fill: #6366F1 !important;
     }
     
-    /* Plotly modebar container */
-    .js-plotly-plot .plotly .modebar {
-        background: #FFFFFF !important;
+    /* Plotly modebar container - 完全隐藏工具栏 */
+    .js-plotly-plot .plotly .modebar,
+    .js-plotly-plot .plotly .modebar-container,
+    .js-plotly-plot .plotly .modebar-group {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
     }
     
-    /* Plotly modebar buttons container */
-    .js-plotly-plot .plotly .modebar-container {
-        background: #FFFFFF !important;
+    /* 更具体的选择器，确保工具栏完全隐藏 */
+    div[class*="js-plotly-plot"] .modebar,
+    div[class*="plotly"] .modebar,
+    .plotly .modebar,
+    div[class*="js-plotly-plot"] .modebar-container,
+    div[class*="plotly"] .modebar-container,
+    .plotly .modebar-container {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
     }
     
     /* Plotly modebar button icons */
@@ -1914,9 +1943,15 @@ def load_strategies():
             with open(file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             
+            # 优先从 metadata 中获取 symbol，如果没有则从文件名提取
+            symbol = data.get('metadata', {}).get('symbol')
+            if not symbol:
+                # 从文件名提取：BABA_ST.json -> BABA, BABA_ST_20251110_154656.json -> BABA
+                symbol = file.name.split('_')[0]
+            
             strategies.append({
                 'filename': file.name,
-                'symbol': file.name.split('_')[0],
+                'symbol': symbol,
                 'name': data.get('name', 'Unknown'),
                 'signal_weights': data.get('signal_weights', {}),
                 'backtest_performance': data.get('backtest_performance', {}),
@@ -2517,20 +2552,53 @@ elif display_page == "📈 Real-time Monitor":
             st.warning("⚠️ No strategies found. Please run optimization first.")
             monitor_results = []
         else:
-            # Group strategies by symbol and find best performing one
+            # Group strategies by symbol and find best performing one based on actual returns
+            # (from backtest end date to latest date, not historical backtest returns)
             symbol_best_strategies = {}
             
+            # 尝试加载策略性能评估缓存
+            strategy_perf_cache = {}
+            strategy_perf_file = Path("strategy_performance_cache.json")
+            if strategy_perf_file.exists():
+                try:
+                    with open(strategy_perf_file, 'r', encoding='utf-8') as f:
+                        cache_data = json.load(f)
+                        strategy_perf_cache = cache_data.get('strategy_performance', {})
+                except:
+                    pass
+            
+            # 按标的分组策略
+            strategies_by_symbol = {}
             for strategy in strategies:
                 symbol = strategy['symbol']
+                if not symbol:
+                    continue
+                if symbol not in strategies_by_symbol:
+                    strategies_by_symbol[symbol] = []
+                strategies_by_symbol[symbol].append(strategy)
+            
+            # 对每个标的，使用缓存的实际收益选择最优策略
+            for symbol, symbol_strategies in strategies_by_symbol.items():
+                best_strategy = None
+                best_return = -999
                 
-                # Skip if already have a strategy for this symbol with better performance
-                if symbol in symbol_best_strategies:
-                    existing_return = symbol_best_strategies[symbol].get('backtest_performance', {}).get('total_return', -999)
-                    current_return = strategy.get('backtest_performance', {}).get('total_return', -999)
-                    if current_return <= existing_return:
-                        continue
+                # 如果有缓存，使用缓存的实际收益
+                if symbol in strategy_perf_cache:
+                    for strategy in symbol_strategies:
+                        strategy_name = strategy['name']
+                        if strategy_name in strategy_perf_cache[symbol]:
+                            cached_perf = strategy_perf_cache[symbol][strategy_name]
+                            actual_return = cached_perf.get('actual_return', -999)
+                            if actual_return > best_return:
+                                best_return = actual_return
+                                best_strategy = strategy
                 
-                symbol_best_strategies[symbol] = strategy
+                # 如果没有缓存或缓存中没有该策略，使用第一个策略作为默认
+                if best_strategy is None and symbol_strategies:
+                    best_strategy = symbol_strategies[0]
+                
+                if best_strategy:
+                    symbol_best_strategies[symbol] = best_strategy
             
             st.markdown(f"### 🎯 Monitoring {len(symbol_best_strategies)} Symbols")
             
@@ -2918,22 +2986,15 @@ elif display_page == "📈 Real-time Monitor":
                         paper_bgcolor='#FFFFFF',
                         hovermode='x unified',
                         height=500,
-                        margin=dict(l=60, r=30, t=40, b=60),
+                        margin=dict(l=60, r=100, t=40, b=60),  # 增加右侧边距，为工具栏留出空间
                         showlegend=False
                     )
                     
                     # Display interactive chart
+                    # 完全隐藏工具栏，避免遮挡图表内容
                     st.plotly_chart(fig, use_container_width=True, config={
-                        'displayModeBar': True,
-                        'displaylogo': False,
-                        'modeBarButtonsToRemove': ['pan2d', 'lasso2d'],
-                        'toImageButtonOptions': {
-                            'format': 'png',
-                            'filename': f'{result["symbol"]}_equity_curve',
-                            'height': 600,
-                            'width': 1200,
-                            'scale': 2
-                        }
+                        'displayModeBar': False,  # 完全隐藏工具栏
+                        'displaylogo': False
                     })
                 else:
                     st.info("No equity curve data available")

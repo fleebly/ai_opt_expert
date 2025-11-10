@@ -1,0 +1,39 @@
+{
+  "generated_at": "2025-11-10 17:15:59",
+  "strategy_performance": {
+    "BABA": {
+      "CCI_Momentum_MACD_Enhanced": {
+        "actual_return": 0.0,
+        "evaluation_period": "2025-10-01 to 2025-11-10",
+        "evaluated_at": "2025-11-10 17:13:21"
+      },
+      "MACD_RSI_BB": {
+        "actual_return": 1.2074965506059092,
+        "evaluation_period": "2025-05-01 to 2025-11-10",
+        "evaluated_at": "2025-11-10 17:13:53"
+      },
+      "MACD_Volume_Reversal": {
+        "actual_return": 0.0,
+        "evaluation_period": "2025-09-30 to 2025-11-10",
+        "evaluated_at": "2025-11-10 17:13:54"
+      },
+      "Enhanced_MACD_RSI_BB": {
+        "actual_return": 1.950691896368521,
+        "evaluation_period": "2025-04-01 to 2025-11-10",
+        "evaluated_at": "2025-11-10 17:14:13"
+      },
+      "CCI_Volume_LowVol_Fusion": {
+        "actual_return": 2.1748682296096025,
+        "evaluation_period": "2025-05-01 to 2025-11-10",
+        "evaluated_at": "2025-11-10 17:14:59"
+      }
+    },
+    "NVDA": {
+      "CCI_RSI_Volatility_Momentum": {
+        "actual_return": 0.17716158951023972,
+        "evaluation_period": "2025-04-01 to 2025-11-10",
+        "evaluated_at": "2025-11-10 17:15:59"
+      }
+    }
+  }
+}

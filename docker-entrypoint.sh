@@ -19,22 +19,30 @@ ENABLE_SCHEDULER=${ENABLE_SCHEDULER:-true}
 if [ "$ENABLE_SCHEDULER" = "true" ]; then
     echo "🔄 Starting background scheduler (monitor_realtime_updater.py)..."
     echo "📋 Environment: ENABLE_SCHEDULER=$ENABLE_SCHEDULER"
+    echo "📋 POLYGON_API_KEY: $([ -n "$POLYGON_API_KEY" ] && echo '✅ Set' || echo '❌ Not set')"
     
-    # 在后台启动调度器
-    nohup python3 monitor_realtime_updater.py > /tmp/scheduler.log 2>&1 &
+    # 在后台启动调度器，使用 nohup 和重定向到日志文件
+    # 尝试使用 setsid 确保进程在后台独立运行（如果可用），否则使用 nohup
+    if command -v setsid >/dev/null 2>&1; then
+        nohup setsid python3 monitor_realtime_updater.py > /tmp/scheduler.log 2>&1 &
+    else
+        nohup python3 monitor_realtime_updater.py > /tmp/scheduler.log 2>&1 &
+    fi
     SCHEDULER_PID=$!
     echo "✅ Scheduler started with PID: $SCHEDULER_PID"
     echo "📋 Scheduler logs: /tmp/scheduler.log"
     
     # 等待一下确保进程启动
-    sleep 2
+    sleep 3
     
     # 检查进程是否还在运行
     if kill -0 $SCHEDULER_PID 2>/dev/null; then
         echo "✅ Scheduler is running (PID: $SCHEDULER_PID)"
+        echo "📋 Showing initial scheduler logs:"
+        tail -10 /tmp/scheduler.log 2>/dev/null || echo "   (log file not found or empty)"
     else
         echo "⚠️  Warning: Scheduler may have failed to start, check logs:"
-        tail -20 /tmp/scheduler.log 2>/dev/null || echo "   (log file not found)"
+        tail -30 /tmp/scheduler.log 2>/dev/null || echo "   (log file not found)"
     fi
     
     # 设置清理函数

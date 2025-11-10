@@ -1,0 +1,29 @@
+{
+  "name": "MACD_Volume_Reversal",
+  "signal_weights": {
+    "macd_crossover": 0.4,
+    "volume_surge": 0.3,
+    "momentum_reversal": 0.3
+  },
+  "params": {
+    "profit_target": 5.0,
+    "stop_loss": -0.5,
+    "max_holding_days": 30,
+    "position_size": 0.1
+  },
+  "backtest_performance": {
+    "total_return": 94.76321346928486,
+    "win_rate": 0.44,
+    "sharpe_ratio": 2.412323487693763,
+    "max_drawdown": -0.24254915842331537,
+    "num_trades": 25,
+    "avg_win": 108484.03773865203,
+    "avg_loss": -17549.448602308843
+  },
+  "metadata": {
+    "symbol": "BABA",
+    "best_return": 94.76321346928486,
+    "generated_at": "2025-11-07 18:55:28",
+    "backtest_period": "2024-01-01 to 2025-09-30"
+  }
+}

@@ -28,9 +28,15 @@ def load_strategies():
             with open(file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             
+            # 优先从 metadata 中获取 symbol，如果没有则从文件名提取
+            symbol = data.get('metadata', {}).get('symbol')
+            if not symbol:
+                # 从文件名提取：BABA_ST.json -> BABA, BABA_ST_20251110_154656.json -> BABA
+                symbol = file.name.split('_')[0]
+            
             strategies.append({
                 'filename': file.name,
-                'symbol': file.name.split('_')[0],
+                'symbol': symbol,
                 'name': data.get('name', 'Unknown'),
                 'signal_weights': data.get('signal_weights', {}),
                 'backtest_performance': data.get('backtest_performance', {}),
@@ -70,18 +76,136 @@ def update_monitor_data():
         print("❌ No strategies found")
         return
     
-    # 按标的分组，选择每个标的的最优策略
-    symbol_best_strategies = {}
+    # 按标的分组，计算每个策略从回测结束日期到当前日期的实际收益，选择最优策略
+    print("🔍 Evaluating strategies based on real-time performance (from backtest end date to today)...")
+    
+    monitor_start_date = "2025-04-01"  # 从配置或环境变量读取
+    end_date = datetime.now().strftime("%Y-%m-%d")
+    
+    # 按标的分组策略
+    strategies_by_symbol = {}
     for strategy in strategies:
         symbol = strategy['symbol']
-        if symbol in symbol_best_strategies:
-            existing_return = symbol_best_strategies[symbol].get('backtest_performance', {}).get('total_return', -999)
-            current_return = strategy.get('backtest_performance', {}).get('total_return', -999)
-            if current_return <= existing_return:
-                continue
-        symbol_best_strategies[symbol] = strategy
+        if not symbol:
+            continue
+        if symbol not in strategies_by_symbol:
+            strategies_by_symbol[symbol] = []
+        strategies_by_symbol[symbol].append(strategy)
     
-    print(f"📊 Updating {len(symbol_best_strategies)} symbols: {list(symbol_best_strategies.keys())}")
+    # 对每个标的，计算每个策略的实际收益并选择最优
+    symbol_best_strategies = {}
+    symbol_strategy_returns = {}  # 存储每个策略的实际收益
+    
+    # 保存策略实际收益到缓存，供前端使用
+    strategy_performance_cache = {}
+    
+    for symbol, symbol_strategies in strategies_by_symbol.items():
+        print(f"\n  📊 Evaluating {len(symbol_strategies)} strategies for {symbol}...")
+        best_strategy = None
+        best_return = -999
+        best_strategy_name = None
+        
+        for strategy in symbol_strategies:
+            try:
+                # 获取回测结束日期
+                metadata = strategy.get('metadata', {})
+                backtest_period = metadata.get('backtest_period', '')
+                
+                # 从 backtest_period 解析结束日期，格式: "2024-01-01 to 2025-05-01"
+                if backtest_period and ' to ' in backtest_period:
+                    backtest_end_date = backtest_period.split(' to ')[1].strip()
+                else:
+                    # 如果没有回测期间信息，使用监控开始日期
+                    backtest_end_date = monitor_start_date
+                
+                # 确保回测结束日期不晚于今天
+                backtest_end_dt = datetime.strptime(backtest_end_date, '%Y-%m-%d')
+                today_dt = datetime.strptime(end_date, '%Y-%m-%d')
+                
+                if backtest_end_dt >= today_dt:
+                    # 回测结束日期已经是今天或未来，使用监控开始日期
+                    backtest_end_date = monitor_start_date
+                    backtest_end_dt = datetime.strptime(backtest_end_date, '%Y-%m-%d')
+                
+                # 如果回测结束日期到今天的间隔太短（少于3天），使用监控开始日期
+                days_diff = (today_dt - backtest_end_dt).days
+                if days_diff < 3:
+                    backtest_end_date = monitor_start_date
+                
+                # 运行从回测结束日期到今天的回测
+                print(f"    🔄 Testing '{strategy['name']}' from {backtest_end_date} to {end_date}...")
+                
+                # 加载策略配置
+                with open(strategy['path'], 'r', encoding='utf-8') as f:
+                    strategy_config = json.load(f)
+                
+                params = strategy_config.get('params', {})
+                signal_weights = strategy_config.get('signal_weights', {})
+                
+                # 运行回测
+                backtest = OptionBacktest(initial_capital=10000, use_real_prices=True)
+                result = backtest.run_backtest(
+                    symbol=symbol,
+                    start_date=backtest_end_date,
+                    end_date=end_date,
+                    strategy='auto',
+                    entry_signal=signal_weights,
+                    profit_target=params.get('profit_target', 5.0),
+                    stop_loss=params.get('stop_loss', -0.5),
+                    max_holding_days=params.get('max_holding_days', 30),
+                    position_size=params.get('position_size', 0.1)
+                )
+                
+                # 计算实际收益
+                if len(result.equity_curve) > 0:
+                    final_value = result.equity_curve[-1]
+                    actual_return = (final_value - 10000) / 10000
+                else:
+                    actual_return = -999  # 没有数据
+                
+                strategy_key = f"{symbol}_{strategy['name']}"
+                symbol_strategy_returns[strategy_key] = actual_return
+                
+                # 保存到缓存
+                if symbol not in strategy_performance_cache:
+                    strategy_performance_cache[symbol] = {}
+                strategy_performance_cache[symbol][strategy['name']] = {
+                    'actual_return': actual_return,
+                    'evaluation_period': f"{backtest_end_date} to {end_date}",
+                    'evaluated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                }
+                
+                print(f"      → Actual return: {actual_return:+.2%} (from {backtest_end_date} to {end_date})")
+                
+                # 选择收益最大的策略
+                if actual_return > best_return:
+                    best_return = actual_return
+                    best_strategy = strategy
+                    best_strategy_name = strategy['name']
+                    
+            except Exception as e:
+                print(f"      ❌ Error evaluating '{strategy['name']}': {str(e)}")
+                continue
+        
+        if best_strategy:
+            symbol_best_strategies[symbol] = best_strategy
+            print(f"  ✅ {symbol}: Selected '{best_strategy_name}' (actual return: {best_return:+.2%})")
+        else:
+            print(f"  ⚠️  {symbol}: No valid strategy found")
+    
+    print(f"\n📊 Updating {len(symbol_best_strategies)} symbols: {list(symbol_best_strategies.keys())}")
+    
+    # 保存策略性能评估结果到文件，供前端使用
+    strategy_perf_file = Path("strategy_performance_cache.json")
+    try:
+        with open(strategy_perf_file, 'w', encoding='utf-8') as f:
+            json.dump({
+                'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'strategy_performance': strategy_performance_cache
+            }, f, indent=2, ensure_ascii=False)
+        print(f"💾 Saved strategy performance evaluation to {strategy_perf_file}")
+    except Exception as e:
+        print(f"⚠️  Failed to save strategy performance cache: {e}")
     
     monitor_results = []
     monitor_start_date = "2025-04-01"  # 从配置或环境变量读取
@@ -375,8 +499,9 @@ def run_scheduler():
     
     print("🚀 Starting real-time monitor updater...")
     print("📅 Schedule: Daily at 06:00 (6:00 AM)")
-    print("⏰ Next update will be at 06:00 tomorrow")
     print(f"🆔 Process ID: {os.getpid()}")
+    print(f"📂 Working directory: {os.getcwd()}")
+    print(f"🔑 POLYGON_API_KEY: {'✅ Set' if os.getenv('POLYGON_API_KEY') else '❌ Not set'}")
     
     # 每天早上 6 点运行
     schedule.every().day.at("06:00").do(update_monitor_data)
@@ -389,13 +514,25 @@ def run_scheduler():
         # 如果今天 6 点已过，则设置为明天 6 点
         next_run += timedelta(days=1)
     time_until_next = (next_run - now).total_seconds() / 3600  # 转换为小时
+    print(f"⏰ Next update will be at: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"⏳ Time until next update: {time_until_next:.1f} hours")
     
     # 保持运行
+    last_check = datetime.now()
+    check_interval = 60  # 每分钟检查一次
+    print(f"🔄 Scheduler loop started, checking every {check_interval} seconds...")
+    
     try:
         while True:
             schedule.run_pending()
-            time.sleep(60)  # 每分钟检查一次
+            
+            # 每 5 分钟输出一次心跳日志，确认调度器还在运行
+            current_time = datetime.now()
+            if (current_time - last_check).total_seconds() >= 300:  # 5 分钟
+                print(f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] 💓 Scheduler heartbeat - still running, next update at {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
+                last_check = current_time
+            
+            time.sleep(check_interval)  # 每分钟检查一次
     except KeyboardInterrupt:
         print("\n🛑 Keyboard interrupt received, stopping scheduler...")
         sys.exit(0)
