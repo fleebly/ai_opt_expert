@@ -51,7 +51,9 @@ logs/
 # Project specific
 .pids/
 report_assets/
-signal_optimization/
+# signal_optimization/ - 需要提交 Python 文件，只忽略 JSON 和 HTML 文件
+signal_optimization/*.json
+signal_optimization/*.html
 
 # Netlify
 .netlify/
