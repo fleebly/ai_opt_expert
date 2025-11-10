@@ -2357,16 +2357,51 @@ elif display_page == "📈 Real-time Monitor":
         # Get trades
         trades = result.get('trades', [])
         if not trades:
-            # No trades, return original result with adjusted equity curve
-            equity_curve = result.get('equity_curve', pd.Series([initial_capital], index=[pd.to_datetime(start_date)]))
+            # No trades, use equity_curve to calculate final_value
+            equity_curve_original = result.get('equity_curve', [])
+            # Check if equity_curve_original is valid (not None and not empty)
+            has_equity_curve = False
+            if equity_curve_original is not None:
+                if isinstance(equity_curve_original, list) and len(equity_curve_original) > 0:
+                    has_equity_curve = True
+                elif isinstance(equity_curve_original, pd.Series) and len(equity_curve_original) > 0:
+                    has_equity_curve = True
+            
+            if has_equity_curve:
+                # Convert to Series if needed
+                if isinstance(equity_curve_original, pd.Series):
+                    equity_series = equity_curve_original.copy()
+                elif isinstance(equity_curve_original, list):
+                    dates = [item['date'] for item in equity_curve_original]
+                    values = [item['value'] for item in equity_curve_original]
+                    equity_series = pd.Series(values, index=pd.to_datetime(dates))
+                else:
+                    equity_series = pd.Series([initial_capital], index=[pd.to_datetime(start_date)])
+                
+                # Filter to start_date onwards
+                start_date_dt = pd.to_datetime(start_date)
+                if isinstance(equity_series.index, pd.DatetimeIndex):
+                    equity_series = equity_series[equity_series.index >= start_date_dt]
+                
+                if len(equity_series) > 0:
+                    final_value = float(equity_series.iloc[-1])
+                    total_return = (final_value - initial_capital) / initial_capital
+                else:
+                    final_value = initial_capital
+                    total_return = 0.0
+            else:
+                final_value = initial_capital
+                total_return = 0.0
+                equity_series = pd.Series([initial_capital], index=[pd.to_datetime(start_date)])
+            
             return {
                 **result,
-                'total_return': 0.0,
-                'final_value': initial_capital,
+                'total_return': total_return,
+                'final_value': final_value,
                 'num_trades': 0,
                 'win_rate': 0.0,
                 'trades': [],
-                'equity_curve': equity_curve
+                'equity_curve': equity_series
             }
         
         # Filter trades: only include trades that started on or after start_date
@@ -2380,22 +2415,80 @@ elif display_page == "📈 Real-time Monitor":
         
         # Recalculate metrics based on filtered trades
         if not filtered_trades:
-            # No trades after start date
-            equity_curve = result.get('equity_curve', pd.Series([initial_capital], index=[pd.to_datetime(start_date)]))
+            # No trades after start date, use equity_curve to calculate final_value
+            equity_curve_original = result.get('equity_curve', [])
+            # Check if equity_curve_original is valid (not None and not empty)
+            has_equity_curve = False
+            if equity_curve_original is not None:
+                if isinstance(equity_curve_original, list) and len(equity_curve_original) > 0:
+                    has_equity_curve = True
+                elif isinstance(equity_curve_original, pd.Series) and len(equity_curve_original) > 0:
+                    has_equity_curve = True
+            
+            if has_equity_curve:
+                # Convert to Series if needed
+                if isinstance(equity_curve_original, pd.Series):
+                    equity_series = equity_curve_original.copy()
+                elif isinstance(equity_curve_original, list):
+                    dates = [item['date'] for item in equity_curve_original]
+                    values = [item['value'] for item in equity_curve_original]
+                    equity_series = pd.Series(values, index=pd.to_datetime(dates))
+                else:
+                    equity_series = pd.Series([initial_capital], index=[pd.to_datetime(start_date)])
+                
+                # Filter to start_date onwards
+                start_date_dt = pd.to_datetime(start_date)
+                if isinstance(equity_series.index, pd.DatetimeIndex):
+                    equity_series = equity_series[equity_series.index >= start_date_dt]
+                
+                if len(equity_series) > 0:
+                    final_value = float(equity_series.iloc[-1])
+                    total_return = (final_value - initial_capital) / initial_capital
+                else:
+                    final_value = initial_capital
+                    total_return = 0.0
+            else:
+                final_value = initial_capital
+                total_return = 0.0
+                equity_series = pd.Series([initial_capital], index=[pd.to_datetime(start_date)])
+            
             return {
                 **result,
-                'total_return': 0.0,
-                'final_value': initial_capital,
+                'total_return': total_return,
+                'final_value': final_value,
                 'num_trades': 0,
                 'win_rate': 0.0,
                 'trades': [],
-                'equity_curve': equity_curve
+                'equity_curve': equity_series
             }
         
-        # Calculate cumulative PnL from filtered trades
-        total_pnl = sum(t.get('pnl', 0) or 0 for t in filtered_trades)
-        final_value = initial_capital + total_pnl
-        total_return = (final_value - initial_capital) / initial_capital
+        # Calculate final_value from equity_curve if available, otherwise from trades
+        equity_curve_original = result.get('equity_curve', [])
+        if equity_curve_original is not None and (isinstance(equity_curve_original, list) and len(equity_curve_original) > 0 or isinstance(equity_curve_original, pd.Series) and len(equity_curve_original) > 0):
+            # Convert to Series if needed
+            if isinstance(equity_curve_original, pd.Series):
+                temp_series = equity_curve_original.copy()
+            elif isinstance(equity_curve_original, list):
+                dates = [item['date'] for item in equity_curve_original]
+                values = [item['value'] for item in equity_curve_original]
+                temp_series = pd.Series(values, index=pd.to_datetime(dates))
+            else:
+                temp_series = None
+            
+            if temp_series is not None and len(temp_series) > 0:
+                # Use the last value from equity_curve as final_value
+                final_value = float(temp_series.iloc[-1])
+                total_return = (final_value - initial_capital) / initial_capital
+            else:
+                # Fallback to trades calculation
+                total_pnl = sum(t.get('pnl', 0) or 0 for t in filtered_trades)
+                final_value = initial_capital + total_pnl
+                total_return = (final_value - initial_capital) / initial_capital
+        else:
+            # No equity_curve, calculate from trades
+            total_pnl = sum(t.get('pnl', 0) or 0 for t in filtered_trades)
+            final_value = initial_capital + total_pnl
+            total_return = (final_value - initial_capital) / initial_capital
         
         # Calculate win rate
         closed_trades = [t for t in filtered_trades if t.get('status') == 'closed' and t.get('pnl') is not None]
@@ -2555,7 +2648,7 @@ elif display_page == "📈 Real-time Monitor":
             # Group strategies by symbol and find best performing one based on actual returns
             # (from backtest end date to latest date, not historical backtest returns)
             symbol_best_strategies = {}
-            
+        
             # 尝试加载策略性能评估缓存
             strategy_perf_cache = {}
             strategy_perf_file = Path("strategy_performance_cache.json")
@@ -2737,8 +2830,8 @@ elif display_page == "📈 Real-time Monitor":
             # Clear force update flag
             if force_update:
                 st.session_state['force_update'] = False
-        
-        # Sort by return (best first)
+            
+            # Sort by return (best first)
             if monitor_results:
                 monitor_results.sort(key=lambda x: x['total_return'], reverse=True)
         
@@ -3063,25 +3156,25 @@ elif display_page == "📈 Real-time Monitor":
     else:
         st.info("💡 No monitor results available. Data will appear after the first update cycle.")
     
-        # Auto-refresh logic for real-time updates
+    # Auto-refresh logic for real-time updates
     if auto_refresh:
-            # Check if monitor_results.json was recently updated (within last 16 minutes)
-            if saved_results_file.exists():
-                file_mtime = saved_results_file.stat().st_mtime
-                time_since_update = time.time() - file_mtime
-                
-                # Refresh every 15 seconds to check for updates
-                if time_since_update < 960:  # 16 minutes
-                    time.sleep(15)
-                    st.rerun()
-                else:
-                    # No recent updates, refresh every 30 seconds
-                    time.sleep(30)
-                    st.rerun()
+        # Check if monitor_results.json was recently updated (within last 16 minutes)
+        if saved_results_file.exists():
+            file_mtime = saved_results_file.stat().st_mtime
+            time_since_update = time.time() - file_mtime
+            
+            # Refresh every 15 seconds to check for updates
+            if time_since_update < 960:  # 16 minutes
+                time.sleep(15)
+                st.rerun()
             else:
-                # File doesn't exist, refresh every 30 seconds
+                # No recent updates, refresh every 30 seconds
                 time.sleep(30)
                 st.rerun()
+        else:
+            # File doesn't exist, refresh every 30 seconds
+            time.sleep(30)
+            st.rerun()
 
 
 # ==================== 策略优化 ====================
@@ -3112,19 +3205,27 @@ elif display_page == "🚀 Strategy Optimization":
     
     # 单标的优化表单
     st.markdown("### 📊 Optimize Strategy")
-    st.markdown("Generate optimized strategy for a specific symbol.")
+    st.markdown("Generate optimized strategy for a specific symbol. Use evaluation period to avoid overfitting.")
     
     with st.form("single_optimization_form"):
         col1, col2 = st.columns(2)
         
         with col1:
             symbol = st.text_input("Symbol", value="BABA", help="e.g.: BABA, NVDA, AAPL")
-            start_date = st.date_input("Backtest Start Date", value=pd.to_datetime("2025-01-01"), key="single_start")
+            st.markdown("**📊 Backtest Period**")
+            start_date = st.date_input("Backtest Start Date", value=pd.to_datetime("2024-01-01"), key="single_start", help="Start date of backtest period")
+            end_date = st.date_input("Backtest End Date", value=pd.to_datetime("2025-04-01"), key="single_end", help="End date of backtest period (also start of evaluation period if enabled)")
             max_iter = st.slider("Max Iterations", 1, 20, 10, key="single_iter")
         
         with col2:
-            st.write("")  # 占位
-            end_date = st.date_input("Backtest End Date", value=pd.to_datetime("2025-12-01"), key="single_end")
+            st.markdown("**🔍 Evaluation Period**")
+            use_evaluation = st.checkbox("Enable Evaluation Period", value=True, key="use_eval", help="Use evaluation period to test strategy robustness and avoid overfitting")
+            if use_evaluation:
+                eval_start_date = st.date_input("Evaluation Start Date", value=pd.to_datetime("2025-04-01"), key="eval_start", help="Start date of evaluation period (defaults to backtest end date)")
+                eval_end_date = st.date_input("Evaluation End Date", value=pd.to_datetime("2025-11-01"), key="eval_end", help="End date of evaluation period")
+            else:
+                eval_start_date = None
+                eval_end_date = None
             threshold = st.slider("Convergence Threshold", 0.01, 0.2, 0.05, 0.01, key="single_threshold")
         
         submitted = st.form_submit_button("🚀 Start Optimization", use_container_width=True)
@@ -3147,6 +3248,13 @@ elif display_page == "🚀 Strategy Optimization":
                 "--max-iter", str(max_iter),
                 "--threshold", str(threshold)
             ]
+            
+            # 如果启用了评估周期，添加评估周期参数
+            if use_evaluation and eval_end_date:
+                cmd.extend([
+                    "--eval-start", eval_start_date.strftime("%Y-%m-%d"),
+                    "--eval-end", eval_end_date.strftime("%Y-%m-%d")
+                ])
             
             task = BackgroundTask(
                 task_id=task_id,
@@ -3226,20 +3334,16 @@ elif display_page == "🚀 Strategy Optimization":
                     st.session_state[log_show_key] = show_logs
                     
                     if show_logs:
-                        col1, col2 = st.columns([4, 1])
-                        with col1:
-                            st.caption(f"Showing last {len(display_logs)} entries")
-                        with col2:
-                            if len(logs) > 50:
-                                # Download button inside expander, next to log display
-                                st.download_button(
-                                    "📥 Download Full Logs",
-                                    data="\n".join(logs),
-                                    file_name=f"{task_id}_logs.txt",
-                                    mime="text/plain",
-                                    key=f"opt_save_logs_{task_id}",
-                                    use_container_width=True
-                                )
+                        # Download button - must be outside any form context
+                        if len(logs) > 50:
+                            st.download_button(
+                                "📥 Download Full Logs",
+                                data="\n".join(logs),
+                                file_name=f"{task_id}_logs.txt",
+                                mime="text/plain",
+                                key=f"opt_save_logs_{task_id}",
+                                use_container_width=True
+                            )
                         
                         # 使用纯文本显示，外部加边框
                         log_html = f"""

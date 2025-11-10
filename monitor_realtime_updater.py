@@ -13,8 +13,33 @@ import schedule
 import pandas as pd
 from pathlib import Path
 from datetime import datetime, timedelta
+from typing import Optional
 from backtest_engine import OptionBacktest
 from monitor_cache import MonitorCache
+
+def get_previous_trading_day(date_str: Optional[str] = None) -> str:
+    """
+    获取上一个交易日（排除周末）
+    
+    Args:
+        date_str: 基准日期（YYYY-MM-DD），如果为 None 则使用今天
+    
+    Returns:
+        上一个交易日的日期字符串（YYYY-MM-DD）
+    """
+    if date_str:
+        base_date = datetime.strptime(date_str, '%Y-%m-%d')
+    else:
+        base_date = datetime.now()
+    
+    # 向前查找，跳过周末（周六=5, 周日=6）
+    previous_date = base_date - timedelta(days=1)
+    
+    # 如果前一天是周末，继续向前查找
+    while previous_date.weekday() >= 5:  # 5=Saturday, 6=Sunday
+        previous_date -= timedelta(days=1)
+    
+    return previous_date.strftime('%Y-%m-%d')
 
 def load_strategies():
     """加载所有策略文件"""
@@ -76,11 +101,13 @@ def update_monitor_data():
         print("❌ No strategies found")
         return
     
-    # 按标的分组，计算每个策略从回测结束日期到当前日期的实际收益，选择最优策略
-    print("🔍 Evaluating strategies based on real-time performance (from backtest end date to today)...")
+    # 按标的分组，计算每个策略从回测结束日期到上一个交易日的实际收益，选择最优策略
+    print("🔍 Evaluating strategies based on real-time performance (from backtest end date to previous trading day)...")
     
     monitor_start_date = "2025-04-01"  # 从配置或环境变量读取
-    end_date = datetime.now().strftime("%Y-%m-%d")
+    # 使用上一个交易日，因为当前日期可能还没有实时数据
+    end_date = get_previous_trading_day()
+    print(f"📅 Using previous trading day as end date: {end_date}")
     
     # 按标的分组策略
     strategies_by_symbol = {}
@@ -118,22 +145,22 @@ def update_monitor_data():
                     # 如果没有回测期间信息，使用监控开始日期
                     backtest_end_date = monitor_start_date
                 
-                # 确保回测结束日期不晚于今天
+                # 确保回测结束日期不晚于上一个交易日
                 backtest_end_dt = datetime.strptime(backtest_end_date, '%Y-%m-%d')
-                today_dt = datetime.strptime(end_date, '%Y-%m-%d')
+                prev_trading_day_dt = datetime.strptime(end_date, '%Y-%m-%d')
                 
-                if backtest_end_dt >= today_dt:
-                    # 回测结束日期已经是今天或未来，使用监控开始日期
+                if backtest_end_dt >= prev_trading_day_dt:
+                    # 回测结束日期已经是上一个交易日或未来，使用监控开始日期
                     backtest_end_date = monitor_start_date
                     backtest_end_dt = datetime.strptime(backtest_end_date, '%Y-%m-%d')
                 
-                # 如果回测结束日期到今天的间隔太短（少于3天），使用监控开始日期
-                days_diff = (today_dt - backtest_end_dt).days
+                # 如果回测结束日期到上一个交易日的间隔太短（少于3天），使用监控开始日期
+                days_diff = (prev_trading_day_dt - backtest_end_dt).days
                 if days_diff < 3:
                     backtest_end_date = monitor_start_date
                 
-                # 运行从回测结束日期到今天的回测
-                print(f"    🔄 Testing '{strategy['name']}' from {backtest_end_date} to {end_date}...")
+                # 运行从回测结束日期到上一个交易日的回测
+                print(f"    🔄 Testing '{strategy['name']}' from {backtest_end_date} to {end_date} (previous trading day)...")
                 
                 # 加载策略配置
                 with open(strategy['path'], 'r', encoding='utf-8') as f:
@@ -230,12 +257,70 @@ def update_monitor_data():
                 # 首次运行，从监控开始日期
                 update_start_date = monitor_start_date
             
-            end_date = datetime.now().strftime("%Y-%m-%d")
+            # 使用上一个交易日作为结束日期（因为当前日期可能还没有实时数据）
+            end_date = get_previous_trading_day()
             
-            # 如果开始日期大于结束日期，跳过
+            # 如果开始日期大于结束日期，说明已经是最新数据，跳过
             if update_start_date > end_date:
-                # 只更新今天的数据点
-                update_start_date = end_date
+                print(f"  ⏭️  {symbol}: Already up to date (last update: {last_update}, previous trading day: {end_date})")
+                # 从缓存加载数据
+                cached_data = cache_manager.get_symbol_data(symbol)
+                equity_curve_series = cache_manager.get_equity_curve_series(symbol)
+                if cached_data and equity_curve_series is not None:
+                    # 将 Series 转换为列表格式，确保 JSON 序列化正确
+                    # 只保留到上一个交易日的数据，如果最后一个交易日缺失，用前一个交易日的数据填充
+                    equity_curve_data = []
+                    prev_trading_day = get_previous_trading_day()
+                    prev_trading_day_dt = datetime.strptime(prev_trading_day, '%Y-%m-%d')
+                    
+                    if isinstance(equity_curve_series.index, pd.DatetimeIndex):
+                        for date_idx, value in equity_curve_series.items():
+                            date_str = date_idx.strftime('%Y-%m-%d')
+                            date_dt = datetime.strptime(date_str, '%Y-%m-%d')
+                            # 只保留到上一个交易日的数据
+                            if date_dt <= prev_trading_day_dt:
+                                equity_curve_data.append({'date': date_str, 'value': float(value)})
+                    else:
+                        # 如果不是 DatetimeIndex，使用索引作为日期
+                        for i, value in enumerate(equity_curve_series):
+                            date_str = equity_curve_series.index[i] if hasattr(equity_curve_series.index[i], 'strftime') else str(equity_curve_series.index[i])
+                            try:
+                                date_dt = datetime.strptime(date_str, '%Y-%m-%d')
+                                if date_dt <= prev_trading_day_dt:
+                                    equity_curve_data.append({'date': date_str, 'value': float(value)})
+                            except:
+                                # 如果日期解析失败，跳过
+                                continue
+                    
+                    # 检查最后一个日期是否是上一个交易日，如果不是，用最后一个有效值填充
+                    if len(equity_curve_data) > 0:
+                        last_date_str = equity_curve_data[-1]['date']
+                        last_date_dt = datetime.strptime(last_date_str, '%Y-%m-%d')
+                        if last_date_dt < prev_trading_day_dt:
+                            # 用最后一个有效值填充上一个交易日
+                            last_value = equity_curve_data[-1]['value']
+                            equity_curve_data.append({'date': prev_trading_day, 'value': float(last_value)})
+                            print(f"  📅 Padding {prev_trading_day} with previous value: ${last_value:.2f}")
+                    
+                    # 使用最后一个值作为 final_value（应该是上一个交易日），确保正确计算 total_return
+                    final_value = float(equity_curve_data[-1]['value']) if len(equity_curve_data) > 0 else 10000.0
+                    total_return = (final_value - 10000) / 10000
+                    
+                    monitor_result = {
+                        'symbol': symbol,
+                        'strategy_name': strategy['name'],
+                        'total_return': total_return,  # 重新计算，确保正确
+                        'final_value': final_value,  # 使用实际的最后一个值
+                        'num_trades': cached_data.get('num_trades', 0),
+                        'win_rate': cached_data.get('win_rate', 0),
+                        'equity_curve': equity_curve_data,  # 使用列表格式
+                        'trades': [],  # 不重新加载 trades，使用缓存的
+                        'is_cached': True,
+                        'last_updated': cached_data.get('last_updated', 'N/A')
+                    }
+                    monitor_results.append(monitor_result)
+                    print(f"  ✅ {symbol}: Using cached data (Return={total_return:+.2%}, Final Value=${final_value:,.2f})")
+                continue
             
             # 运行回测获取最新数据
             try:
@@ -294,11 +379,19 @@ def update_monitor_data():
                         # 使用缓存的 equity_curve，但使用完整回测的 trades
                         # 合并新的数据点到缓存的 equity_curve
                         new_equity_series = result.equity_curve
-                        if isinstance(new_equity_series.index, pd.DatetimeIndex):
-                            # 合并缓存数据和新数据
+                        if isinstance(new_equity_series.index, pd.DatetimeIndex) and isinstance(cached_equity_series.index, pd.DatetimeIndex):
+                            # 合并缓存数据和新数据，确保新数据覆盖旧数据（如果有重复日期）
                             combined_series = pd.concat([cached_equity_series, new_equity_series])
+                            # 去除重复索引，保留最后一个（新数据优先）
                             combined_series = combined_series[~combined_series.index.duplicated(keep='last')]
                             combined_series = combined_series.sort_index()
+                            
+                            # 调试：打印合并后的最后几个值
+                            if len(combined_series) > 0:
+                                last_few = combined_series.tail(3)
+                                print(f"     Combined series last 3 values:")
+                                for date, val in last_few.items():
+                                    print(f"       {date.strftime('%Y-%m-%d')}: ${val:.2f}")
                             
                             # 创建一个模拟的 full_result 对象，使用缓存的 equity_curve 和完整回测的 trades
                             class MockResult:
@@ -369,20 +462,40 @@ def update_monitor_data():
                 
                 # 更新缓存中的收益曲线
                 # equity_curve 是一个 pandas Series，索引是日期
+                # 只更新到上一个交易日的数据
+                prev_trading_day = get_previous_trading_day()
+                prev_trading_day_dt = datetime.strptime(prev_trading_day, '%Y-%m-%d')
+                
                 if isinstance(full_result.equity_curve.index, pd.DatetimeIndex):
                     # Debug: 打印日期范围
                     first_date = full_result.equity_curve.index[0].strftime('%Y-%m-%d')
                     last_date = full_result.equity_curve.index[-1].strftime('%Y-%m-%d')
                     print(f"  📊 Equity curve date range: {first_date} to {last_date} ({len(full_result.equity_curve)} points)")
-                    print(f"     Requested end_date: {end_date}")
+                    print(f"     Requested end_date: {end_date} (previous trading day: {prev_trading_day})")
                     
-                    # 遍历 Series 的日期索引和值
+                    # 遍历 Series 的日期索引和值，只更新到上一个交易日
+                    last_valid_value = None
+                    last_valid_date = None
                     for date_idx, value in full_result.equity_curve.items():
                         date_str = date_idx.strftime('%Y-%m-%d')
+                        date_dt = datetime.strptime(date_str, '%Y-%m-%d')
+                        
+                        # 只更新到上一个交易日的数据
+                        if date_dt <= prev_trading_day_dt:
+                            cache_manager.update_equity_curve(symbol, {
+                                'date': date_str,
+                                'value': value
+                            })
+                            last_valid_value = value
+                            last_valid_date = date_str
+                    
+                    # 如果最后一个有效日期不是上一个交易日，用最后一个有效值填充
+                    if last_valid_date and last_valid_date < prev_trading_day:
                         cache_manager.update_equity_curve(symbol, {
-                            'date': date_str,
-                            'value': value
+                            'date': prev_trading_day,
+                            'value': last_valid_value
                         })
+                        print(f"  📅 Padding {prev_trading_day} with {last_valid_date} value: ${last_valid_value:.2f}")
                 else:
                     # 如果不是 DatetimeIndex，使用旧的逻辑（向后兼容）
                     for i, value in enumerate(full_result.equity_curve):
@@ -392,9 +505,7 @@ def update_monitor_data():
                             'value': value
                         })
                 
-                # 计算指标
-                final_value = full_result.equity_curve[-1]
-                total_return = (final_value - 10000) / 10000
+                # 计算指标（将在后面基于 equity_curve_data 重新计算）
                 num_trades = len(full_result.trades)
                 winning_trades = sum(1 for t in full_result.trades if t.pnl and t.pnl > 0)
                 win_rate = (winning_trades / num_trades * 100) if num_trades > 0 else 0
@@ -416,26 +527,65 @@ def update_monitor_data():
                 cache_manager.save_symbol_data(symbol, cached_data)
                 
                 # 准备结果数据 - 使用与缓存更新相同的逻辑，正确处理 DatetimeIndex
+                # 确保 equity_curve 是列表格式，而不是 Series，以便 JSON 序列化
+                # 只保留到上一个交易日的数据，如果最后一个交易日缺失，用前一个交易日的数据填充
                 equity_curve_data = []
+                prev_trading_day = get_previous_trading_day()
+                prev_trading_day_dt = datetime.strptime(prev_trading_day, '%Y-%m-%d')
+                
                 if isinstance(full_result.equity_curve.index, pd.DatetimeIndex):
                     # 遍历 Series 的日期索引和值，使用实际日期
+                    # 过滤掉超过上一个交易日的日期
                     for date_idx, value in full_result.equity_curve.items():
                         date_str = date_idx.strftime('%Y-%m-%d')
-                        equity_curve_data.append({'date': date_str, 'value': value})
+                        date_dt = datetime.strptime(date_str, '%Y-%m-%d')
+                        
+                        # 只保留到上一个交易日的数据
+                        if date_dt <= prev_trading_day_dt:
+                            equity_curve_data.append({'date': date_str, 'value': float(value)})
+                    
+                    # 检查最后一个日期是否是上一个交易日，如果不是，用最后一个有效值填充
+                    if len(equity_curve_data) > 0:
+                        last_date_str = equity_curve_data[-1]['date']
+                        last_date_dt = datetime.strptime(last_date_str, '%Y-%m-%d')
+                        if last_date_dt < prev_trading_day_dt:
+                            # 用最后一个有效值填充上一个交易日
+                            last_value = equity_curve_data[-1]['value']
+                            equity_curve_data.append({'date': prev_trading_day, 'value': float(last_value)})
+                            print(f"  📅 Padding {prev_trading_day} with previous value: ${last_value:.2f}")
                 else:
                     # 如果不是 DatetimeIndex，使用旧的逻辑（向后兼容）
                     for i, value in enumerate(full_result.equity_curve):
                         date = (datetime.strptime(monitor_start_date, '%Y-%m-%d') + timedelta(days=i)).strftime('%Y-%m-%d')
-                        equity_curve_data.append({'date': date, 'value': value})
+                        date_dt = datetime.strptime(date, '%Y-%m-%d')
+                        if date_dt <= prev_trading_day_dt:
+                            equity_curve_data.append({'date': date, 'value': float(value)})
+                    
+                    # 同样检查并填充
+                    if len(equity_curve_data) > 0:
+                        last_date_str = equity_curve_data[-1]['date']
+                        last_date_dt = datetime.strptime(last_date_str, '%Y-%m-%d')
+                        if last_date_dt < prev_trading_day_dt:
+                            last_value = equity_curve_data[-1]['value']
+                            equity_curve_data.append({'date': prev_trading_day, 'value': float(last_value)})
+                            print(f"  📅 Padding {prev_trading_day} with previous value: ${last_value:.2f}")
+                
+                # 确保 final_value 和 total_return 基于实际的最后一个值（应该是上一个交易日）
+                if len(equity_curve_data) > 0:
+                    final_value = equity_curve_data[-1]['value']
+                    total_return = (final_value - 10000) / 10000
+                else:
+                    final_value = 10000.0
+                    total_return = 0.0
                 
                 monitor_result = {
                     'symbol': symbol,
                     'strategy_name': strategy['name'],
-                    'total_return': total_return,
-                    'final_value': final_value,
+                    'total_return': total_return,  # 基于 equity_curve_data 计算
+                    'final_value': final_value,  # 基于 equity_curve_data 计算
                     'num_trades': num_trades,
                     'win_rate': win_rate,
-                    'equity_curve': equity_curve_data,
+                    'equity_curve': equity_curve_data,  # 确保是列表格式
                     'trades': [  # 保存交易记录的基本信息
                         {
                             'entry_date': t.entry_date,

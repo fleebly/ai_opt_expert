@@ -42,19 +42,23 @@ class IterativeOptimizer:
         initial_capital: float = 10000,
         max_iterations: int = 10,
         convergence_threshold: float = 0.05,  # 5% 改进视为收敛
-        logger: logging.Logger = None  # 新增：可选的自定义 logger
+        logger: logging.Logger = None,  # 新增：可选的自定义 logger
+        evaluation_start_date: str = None,  # 评估周期开始日期
+        evaluation_end_date: str = None  # 评估周期结束日期
     ):
         """
         初始化
         
         Args:
             symbol: 股票代码
-            start_date: 开始日期
-            end_date: 结束日期
+            start_date: 回测周期开始日期
+            end_date: 回测周期结束日期（也是评估周期的开始日期，如果未指定 evaluation_start_date）
             initial_capital: 初始资金
             max_iterations: 最大迭代次数
             convergence_threshold: 收敛阈值
             logger: 自定义 logger（可选）
+            evaluation_start_date: 评估周期开始日期（如果为 None，则使用 end_date）
+            evaluation_end_date: 评估周期结束日期（如果为 None，则不进行评估周期回测）
         """
         self.symbol = symbol
         self.start_date = start_date
@@ -62,6 +66,11 @@ class IterativeOptimizer:
         self.initial_capital = initial_capital
         self.max_iterations = max_iterations
         self.convergence_threshold = convergence_threshold
+        
+        # 评估周期设置
+        self.evaluation_start_date = evaluation_start_date or end_date
+        self.evaluation_end_date = evaluation_end_date
+        self.has_evaluation_period = evaluation_end_date is not None
         
         # 使用传入的 logger 或默认 logger
         self.logger = logger if logger else logging.getLogger(__name__)
@@ -84,7 +93,9 @@ class IterativeOptimizer:
         """
         self.logger.info("🚀 迭代策略优化器")
         self.logger.info(f"标的: {self.symbol}")
-        self.logger.info(f"期间: {self.start_date} to {self.end_date}")
+        self.logger.info(f"回测周期: {self.start_date} to {self.end_date}")
+        if self.has_evaluation_period:
+            self.logger.info(f"评估周期: {self.evaluation_start_date} to {self.evaluation_end_date}")
         self.logger.info(f"最大迭代: {self.max_iterations} 轮")
         self.logger.info(f"收敛阈值: {self.convergence_threshold:.1%}\n")
         
@@ -191,7 +202,12 @@ class IterativeOptimizer:
         strategies: Dict[str, Dict[str, float]],
         iteration: int
     ) -> List[Dict]:
-        """运行回测"""
+        """
+        运行回测（包括回测周期和评估周期）
+        
+        Returns:
+            回测结果列表，每个结果包含回测周期和评估周期的收益
+        """
         
         self.logger.info(f"📊 运行回测 (策略数: {len(strategies) if strategies else '默认'})")
         
@@ -208,12 +224,37 @@ class IterativeOptimizer:
             
             backtester._generate_strategy_combinations = custom_combinations
         
-        # 运行回测
-        results = backtester.run_all_strategies(
+        # 运行回测周期的回测
+        self.logger.info(f"  🔄 回测周期: {self.start_date} to {self.end_date}")
+        backtest_results = backtester.run_all_strategies(
             self.symbol,
             self.start_date,
             self.end_date
         )
+        
+        # 如果设置了评估周期，运行评估周期的回测
+        evaluation_results = None
+        if self.has_evaluation_period:
+            self.logger.info(f"  🔄 评估周期: {self.evaluation_start_date} to {self.evaluation_end_date}")
+            evaluation_results = backtester.run_all_strategies(
+                self.symbol,
+                self.evaluation_start_date,
+                self.evaluation_end_date
+            )
+            
+            # 将评估周期的收益添加到回测结果中
+            # 按策略名称匹配
+            eval_dict = {r['strategy_name']: r for r in evaluation_results}
+            for result in backtest_results:
+                strategy_name = result['strategy_name']
+                if strategy_name in eval_dict:
+                    result['evaluation_return'] = eval_dict[strategy_name]['total_return']
+                    result['evaluation_win_rate'] = eval_dict[strategy_name]['win_rate']
+                    result['evaluation_num_trades'] = eval_dict[strategy_name]['num_trades']
+                else:
+                    result['evaluation_return'] = None
+                    result['evaluation_win_rate'] = None
+                    result['evaluation_num_trades'] = None
         
         # 恢复原方法
         if strategies:
@@ -222,14 +263,17 @@ class IterativeOptimizer:
         # 生成对比报告
         backtester.generate_comparison_report(self.symbol)
         
-        self.logger.info(f"\n前3名策略:")
-        for i, r in enumerate(results[:3], 1):
+        self.logger.info(f"\n前3名策略 (回测周期):")
+        for i, r in enumerate(backtest_results[:3], 1):
+            eval_info = ""
+            if self.has_evaluation_period and r.get('evaluation_return') is not None:
+                eval_info = f" | 评估周期收益: {r['evaluation_return']:>+7.2%}"
             self.logger.info(f"  {i}. {r['strategy_name']:<20} | "
                        f"收益: {r['total_return']:>+7.2%} | "
                        f"胜率: {r['win_rate']:>5.1%} | "
-                       f"交易: {r['num_trades']:>3}")
+                       f"交易: {r['num_trades']:>3}{eval_info}")
         
-        return results
+        return backtest_results
     
     def _get_deepseek_optimization(
         self,
@@ -257,7 +301,9 @@ class IterativeOptimizer:
         
         for i, r in enumerate(top_5, 1):
             prompt += f"\n{i}. {r['strategy_name']}\n"
-            prompt += f"   - 总收益: {r['total_return']:+.2%}\n"
+            prompt += f"   - 回测周期收益: {r['total_return']:+.2%}\n"
+            if self.has_evaluation_period and r.get('evaluation_return') is not None:
+                prompt += f"   - 评估周期收益: {r['evaluation_return']:+.2%}\n"
             prompt += f"   - 胜率: {r['win_rate']:.1%}\n"
             prompt += f"   - 夏普比率: {r['sharpe_ratio']:.2f}\n"
             prompt += f"   - 交易次数: {r['num_trades']}\n"
@@ -267,7 +313,9 @@ class IterativeOptimizer:
         
         for i, r in enumerate(bottom_5, 1):
             prompt += f"\n{i}. {r['strategy_name']}\n"
-            prompt += f"   - 总收益: {r['total_return']:+.2%}\n"
+            prompt += f"   - 回测周期收益: {r['total_return']:+.2%}\n"
+            if self.has_evaluation_period and r.get('evaluation_return') is not None:
+                prompt += f"   - 评估周期收益: {r['evaluation_return']:+.2%}\n"
             prompt += f"   - 胜率: {r['win_rate']:.1%}\n"
             prompt += f"   - 交易次数: {r['num_trades']}\n"
         
@@ -291,17 +339,25 @@ class IterativeOptimizer:
 - momentum_reversal: 动量反转
 
 ## 优化目标:
-1. 提高总收益率
-2. 提高胜率
-3. 增加夏普比率
-4. 保持足够的交易次数（至少3-5笔）
+1. 提高回测周期收益率
+2. 提高评估周期收益率（如果提供了评估周期数据）
+3. 确保策略在回测周期和评估周期都表现良好（避免过拟合）
+4. 提高胜率
+5. 增加夏普比率
+6. 保持足够的交易次数（至少3-5笔）
+
+## 重要提示:
+- 如果提供了评估周期数据，请特别关注策略在评估周期的表现
+- 优先选择在回测周期和评估周期都表现良好的策略
+- 避免选择只在回测周期表现好但在评估周期表现差的策略（可能是过拟合）
 
 ## 优化建议要求:
-1. 分析表现好的策略的共同特征
-2. 分析表现差的策略的问题
-3. 提出 5-8 个新的策略组合
-4. 每个策略的权重总和应该在 0.8 - 1.2 之间
-5. 可以创新组合，不必局限于现有策略
+1. 分析表现好的策略的共同特征（同时考虑回测周期和评估周期）
+2. 分析表现差的策略的问题（特别关注在评估周期的表现）
+3. 如果评估周期收益明显低于回测周期收益，分析可能的原因（过拟合、市场环境变化等）
+4. 提出 5-8 个新的策略组合，优先考虑在评估周期表现良好的策略特征
+5. 每个策略的权重总和应该在 0.8 - 1.2 之间
+6. 可以创新组合，不必局限于现有策略
 
 ## 输出格式:
 请用JSON格式输出新的策略组合，格式如下:

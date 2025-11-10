@@ -80,6 +80,8 @@ def main():
     parser.add_argument("--end", type=str, default="2025-01-01")
     parser.add_argument("--max-iter", type=int, default=10)
     parser.add_argument("--threshold", type=float, default=0.05)
+    parser.add_argument("--eval-start", type=str, default=None, help="Start date of evaluation period (defaults to --end if --eval-end is provided)")
+    parser.add_argument("--eval-end", type=str, default=None, help="End date of evaluation period")
 
     args = parser.parse_args()
 
@@ -87,11 +89,16 @@ def main():
     global logger
     logger = setup_logger(args.symbol)
 
+    eval_info = ""
+    if args.eval_end:
+        eval_start = args.eval_start or args.end
+        eval_info = f"\n║              评估周期: {eval_start} → {args.eval_end}                      ║"
+    
     banner = f"""
 ╔══════════════════════════════════════════════════════════════════════════╗
 ║                                                                          ║
 ║              🚀 迭代策略优化系统                                          ║
-║              标的: {args.symbol:<10}  周期: {args.start} → {args.end}     ║
+║              标的: {args.symbol:<10}  回测周期: {args.start} → {args.end}     ║{eval_info}
 ║              DeepSeek AI 驱动 - 自动收敛                                 ║
 ║                                                                          ║
 ╚══════════════════════════════════════════════════════════════════════════╝
@@ -106,7 +113,9 @@ def main():
             end_date=args.end,
             max_iterations=args.max_iter,
             convergence_threshold=args.threshold,
-            logger=logger  # 传入 logger
+            logger=logger,  # 传入 logger
+            evaluation_start_date=args.eval_start,
+            evaluation_end_date=args.eval_end
         )
 
         result = optimizer.optimize()
@@ -175,7 +184,8 @@ def main():
                     "symbol": args.symbol,
                     "best_return": result['best_return'],
                     "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "backtest_period": f"{args.start} to {args.end}"
+                    "backtest_period": f"{args.start} to {args.end}",
+                    "evaluation_period": f"{args.eval_start or args.end} to {args.eval_end}" if args.eval_end else None
                 }
             }
 
