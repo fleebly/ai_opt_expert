@@ -132,6 +132,12 @@ class OptionBacktest:
         # This ensures each strategy starts with the same initial capital
         self.current_capital = self.initial_capital
         
+        # 验证股票代码
+        corrected_symbol, suggestion = self._validate_symbol(symbol)
+        if suggestion:
+            logger.warning(suggestion)
+            symbol = corrected_symbol
+        
         # 1. 获取历史数据
         data = self._fetch_historical_data(symbol, start_date, end_date)
         if data is None or len(data) < 20:
@@ -141,6 +147,13 @@ class OptionBacktest:
             logger.error("   2. Data fetching failed (check API key and network)")
             logger.error("   3. Date range is invalid or too short")
             logger.error("   4. Symbol may be delisted or not available")
+            # 提供拼写建议
+            if suggestion:
+                logger.error(f"   5. ⚠️  Symbol typo detected and corrected: '{symbol}' -> '{corrected_symbol}'")
+            elif len(symbol) == 4 or len(symbol) == 5:
+                # 提供常见股票代码建议
+                common_symbols = ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'BABA', 'PLTR']
+                logger.error(f"   5. 💡 Common symbols: {', '.join(common_symbols)}")
             # 返回一个包含基础权益曲线的结果，而不是完全空的结果
             eq_df = pd.DataFrame([{'date': pd.to_datetime(start_date), 'equity': self.initial_capital}])
             eq_df.set_index('date', inplace=True)
@@ -353,6 +366,30 @@ class OptionBacktest:
         
         return result
     
+    def _validate_symbol(self, symbol: str) -> Tuple[str, Optional[str]]:
+        """
+        验证股票代码，检查常见拼写错误
+        
+        Returns:
+            (corrected_symbol, suggestion_message)
+        """
+        # 常见拼写错误映射
+        common_typos = {
+            'TELSA': 'TSLA',
+            'APPL': 'AAPL',
+            'GOOG': 'GOOGL',
+            'MSFT': 'MSFT',  # 这个是对的，但保留用于扩展
+        }
+        
+        symbol_upper = symbol.upper()
+        
+        # 检查是否是已知的拼写错误
+        if symbol_upper in common_typos:
+            correct_symbol = common_typos[symbol_upper]
+            return correct_symbol, f"⚠️  Detected typo: '{symbol}' -> '{correct_symbol}'"
+        
+        return symbol, None
+    
     def _fetch_historical_data(
         self,
         symbol: str,
@@ -360,6 +397,12 @@ class OptionBacktest:
         end_date: str
     ) -> Optional[pd.DataFrame]:
         """获取历史数据"""
+        
+        # 验证并修正股票代码
+        corrected_symbol, suggestion = self._validate_symbol(symbol)
+        if suggestion:
+            logger.warning(suggestion)
+            symbol = corrected_symbol
         
         url = f"{self.base_url}/v2/aggs/ticker/{symbol}/range/1/day/{start_date}/{end_date}"
         params = {

@@ -306,18 +306,72 @@ def update_monitor_data():
                     final_value = float(equity_curve_data[-1]['value']) if len(equity_curve_data) > 0 else 10000.0
                     total_return = (final_value - 10000) / 10000
                     
-                    monitor_result = {
-                        'symbol': symbol,
-                        'strategy_name': strategy['name'],
-                        'total_return': total_return,  # 重新计算，确保正确
-                        'final_value': final_value,  # 使用实际的最后一个值
-                        'num_trades': cached_data.get('num_trades', 0),
-                        'win_rate': cached_data.get('win_rate', 0),
-                        'equity_curve': equity_curve_data,  # 使用列表格式
-                        'trades': [],  # 不重新加载 trades，使用缓存的
-                        'is_cached': True,
-                        'last_updated': cached_data.get('last_updated', 'N/A')
-                    }
+                    # 即使数据已经是最新，也需要运行完整回测来获取所有 trades
+                    print(f"  📊 Data is up to date, running full backtest to get all trades...")
+                    try:
+                        backtest = OptionBacktest(initial_capital=10000, use_real_prices=True)
+                        full_backtest_result = backtest.run_backtest(
+                            symbol=symbol,
+                            start_date=monitor_start_date,
+                            end_date=end_date,
+                            strategy='auto',
+                            entry_signal=signal_weights,
+                            profit_target=params.get('profit_target', 5.0),
+                            stop_loss=params.get('stop_loss', -0.5),
+                            max_holding_days=params.get('max_holding_days', 30),
+                            position_size=params.get('position_size', 0.1)
+                        )
+                        
+                        # 序列化 trades
+                        trades_data = [
+                            {
+                                'entry_date': t.entry_date,
+                                'exit_date': t.exit_date if t.exit_date else None,
+                                'strategy': t.strategy,
+                                'strike': t.strike,
+                                'entry_price': t.entry_price,
+                                'exit_price': t.exit_price if t.exit_price else None,
+                                'pnl': t.pnl if t.pnl is not None else None,
+                                'pnl_pct': t.pnl_pct if t.pnl_pct is not None else None,
+                                'status': t.status
+                            }
+                            for t in full_backtest_result.trades
+                        ] if full_backtest_result.trades else []
+                        
+                        num_trades = len(full_backtest_result.trades)
+                        winning_trades = sum(1 for t in full_backtest_result.trades if t.pnl and t.pnl > 0)
+                        win_rate = (winning_trades / num_trades * 100) if num_trades > 0 else 0
+                        
+                        monitor_result = {
+                            'symbol': symbol,
+                            'strategy_name': strategy['name'],
+                            'total_return': total_return,  # 重新计算，确保正确
+                            'final_value': final_value,  # 使用实际的最后一个值
+                            'num_trades': num_trades,
+                            'win_rate': win_rate,
+                            'equity_curve': equity_curve_data,  # 使用列表格式
+                            'trades': trades_data,  # 从完整回测获取所有 trades
+                            'is_cached': True,
+                            'last_updated': cached_data.get('last_updated', 'N/A')
+                        }
+                        print(f"  ✅ {symbol}: Using cached equity curve, got {num_trades} trades from full backtest")
+                    except Exception as e:
+                        print(f"  ⚠️  Error running full backtest for trades: {str(e)}")
+                        print(f"     Using cached data without trades")
+                        # 如果完整回测失败，使用缓存数据但不包含 trades
+                        monitor_result = {
+                            'symbol': symbol,
+                            'strategy_name': strategy['name'],
+                            'total_return': total_return,
+                            'final_value': final_value,
+                            'num_trades': cached_data.get('num_trades', 0),
+                            'win_rate': cached_data.get('win_rate', 0),
+                            'equity_curve': equity_curve_data,
+                            'trades': [],  # 无法获取 trades
+                            'is_cached': True,
+                            'last_updated': cached_data.get('last_updated', 'N/A')
+                        }
+                    
                     monitor_results.append(monitor_result)
                     print(f"  ✅ {symbol}: Using cached data (Return={total_return:+.2%}, Final Value=${final_value:,.2f})")
                 continue

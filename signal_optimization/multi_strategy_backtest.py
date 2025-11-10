@@ -35,37 +35,59 @@ class MultiStrategyBacktester:
         """
         生成策略组合
         
+        使用随机组合进行宽泛测试，避免过早收敛到局部最优
+        
         Returns:
             Dict of {strategy_name: signal_weights}
         """
-        # 基础策略组合
-        strategies = {
-            "MACD_RSI_BB": {
-                "macd_crossover": 0.3,
-                "rsi_oversold": 0.3,
-                "bb_compression": 0.4
-            },
-            "Volume_MA_Momentum": {
-                "volume_surge": 0.4,
-                "ma_crossover": 0.3,
-                "price_above_ma50": 0.3
-            },
-            "CCI_Williams_Hybrid": {
-                "cci_extreme": 0.4,
-                "williams_oversold": 0.3,
-                "low_volatility": 0.3
-            },
-            "BB_Volume_Hybrid": {
-                "bb_breakout": 0.4,
-                "volume_surge": 0.3,
-                "macd_crossover": 0.3
-            },
-            "RSI_MACD_Divergence": {
-                "rsi_oversold": 0.4,
-                "macd_divergence": 0.3,
-                "low_volatility": 0.3
-            }
-        }
+        import random
+        import numpy as np
+        
+        # 所有可用的信号
+        available_signals = [
+            "bb_compression",
+            "rsi_oversold",
+            "rsi_overbought",
+            "volume_surge",
+            "ma_crossover",
+            "ma_crossunder",
+            "price_above_ma50",
+            "macd_crossover",
+            "macd_divergence",
+            "low_volatility",
+            "williams_oversold",
+            "williams_overbought",
+            "bb_breakout",
+            "cci_extreme",
+            "momentum_reversal"
+        ]
+        
+        # 生成8个随机策略组合进行宽泛测试，每个组合包含2-5个信号
+        # 这样可以探索更多的策略空间，避免过早收敛到局部最优
+        strategies = {}
+        random.seed()  # 使用当前时间作为随机种子，确保每次运行都不同
+        
+        for i in range(8):
+            # 随机选择2-5个信号
+            num_signals = random.randint(2, 5)
+            selected_signals = random.sample(available_signals, num_signals)
+            
+            # 生成随机权重（归一化到1.0）
+            weights = np.random.dirichlet(np.ones(num_signals), size=1)[0]
+            
+            # 创建信号权重字典
+            signal_weights = {signal: float(weight) for signal, weight in zip(selected_signals, weights)}
+            
+            # 生成策略名称
+            strategy_name = "_".join([s.replace("_", "")[:4].upper() for s in selected_signals[:3]])
+            if len(selected_signals) > 3:
+                strategy_name += f"_Plus{len(selected_signals)-3}"
+            
+            strategies[strategy_name] = signal_weights
+        
+        logger.info(f"Generated {len(strategies)} random strategy combinations for broad exploration")
+        for name, weights in strategies.items():
+            logger.debug(f"  {name}: {list(weights.keys())}")
         
         return strategies
     
