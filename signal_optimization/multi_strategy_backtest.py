@@ -13,7 +13,11 @@ from pathlib import Path
 import pandas as pd
 
 from backtest_engine import OptionBacktest
-from signal_library import SignalLibrary
+# 优先从 signal_optimization 导入，如果不存在则从根目录导入
+try:
+    from signal_optimization.signal_library import SignalLibrary
+except ImportError:
+    from signal_library import SignalLibrary
 
 logger = logging.getLogger(__name__)
 
