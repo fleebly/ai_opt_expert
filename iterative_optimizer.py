@@ -214,6 +214,7 @@ class IterativeOptimizer:
         backtester = MultiStrategyBacktester(initial_capital=self.initial_capital)
         
         # 如果提供了自定义策略，临时替换
+        # 如果没有提供策略，先生成一次策略并保存，确保回测周期和评估周期使用相同的策略
         if strategies:
             # 备份原方法
             original_method = backtester._generate_strategy_combinations
@@ -223,6 +224,20 @@ class IterativeOptimizer:
                 return strategies
             
             backtester._generate_strategy_combinations = custom_combinations
+        else:
+            # 第一次迭代时，生成策略并保存，确保回测周期和评估周期使用相同的策略
+            # 备份原方法
+            original_method = backtester._generate_strategy_combinations
+            
+            # 生成策略一次并保存
+            generated_strategies = backtester._generate_strategy_combinations({})
+            
+            # 临时替换，返回已生成的策略
+            def fixed_combinations(signal_defs):
+                return generated_strategies
+            
+            backtester._generate_strategy_combinations = fixed_combinations
+            self.logger.info(f"  📋 生成 {len(generated_strategies)} 个策略用于本次迭代（回测和评估周期将使用相同策略）")
         
         # 运行回测周期的回测
         self.logger.info(f"  🔄 回测周期: {self.start_date} to {self.end_date}")
@@ -236,6 +251,7 @@ class IterativeOptimizer:
         evaluation_results = None
         if self.has_evaluation_period:
             self.logger.info(f"  🔄 评估周期: {self.evaluation_start_date} to {self.evaluation_end_date}")
+            # 注意：这里使用相同的 backtester 实例，所以会使用相同的策略集合
             evaluation_results = backtester.run_all_strategies(
                 self.symbol,
                 self.evaluation_start_date,
@@ -256,9 +272,8 @@ class IterativeOptimizer:
                     result['evaluation_win_rate'] = None
                     result['evaluation_num_trades'] = None
         
-        # 恢复原方法
-        if strategies:
-            backtester._generate_strategy_combinations = original_method
+        # 恢复原方法（无论是否提供了自定义策略，都需要恢复）
+        backtester._generate_strategy_combinations = original_method
         
         # 生成对比报告
         backtester.generate_comparison_report(self.symbol)
