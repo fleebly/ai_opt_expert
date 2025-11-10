@@ -32,6 +32,8 @@ logs/
 *.sqlite
 *.sqlite3
 report_assets/
-signal_optimization/
+# signal_optimization/ - 需要 Python 文件，只忽略 JSON 和 HTML
+signal_optimization/*.json
+signal_optimization/*.html
 .pids/
 
