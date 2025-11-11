@@ -218,7 +218,7 @@ class AISignalGeneratorHybrid:
         }
         
         payload = {
-            'model': 'deepseek-chat',
+            'model': 'deepseek-reasoner',
             'messages': [
                 {
                     'role': 'system',

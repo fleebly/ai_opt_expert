@@ -37,7 +37,7 @@ class DeepSeekClient:
             raise ValueError("DEEPSEEK_API_KEY not found in environment or parameter")
         
         self.base_url = "https://api.deepseek.com/v1"
-        self.model = "deepseek-chat"  # deepseek-chat 或 deepseek-coder
+        self.model = "deepseek-reasoner"  # deepseek-reasoner 或 deepseek-chat
         
         logger.info("DeepSeek client initialized")
     
