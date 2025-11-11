@@ -307,7 +307,9 @@ def update_monitor_data():
                     total_return = (final_value - 10000) / 10000
                     
                     # 即使数据已经是最新，也需要运行完整回测来获取所有 trades
+                    # 但是，不要用完整回测的 equity_curve 更新缓存，因为缓存中可能已经有更新的数据
                     print(f"  📊 Data is up to date, running full backtest to get all trades...")
+                    print(f"  ⚠️  Note: Will NOT update cache equity_curve (using cached data to preserve latest values)")
                     try:
                         backtest = OptionBacktest(initial_capital=10000, use_real_prices=True)
                         full_backtest_result = backtest.run_backtest(
@@ -345,16 +347,17 @@ def update_monitor_data():
                         monitor_result = {
                             'symbol': symbol,
                             'strategy_name': strategy['name'],
-                            'total_return': total_return,  # 重新计算，确保正确
-                            'final_value': final_value,  # 使用实际的最后一个值
+                            'total_return': total_return,  # 基于缓存的 equity_curve_data 计算
+                            'final_value': final_value,  # 基于缓存的 equity_curve_data 计算
                             'num_trades': num_trades,
                             'win_rate': win_rate,
-                            'equity_curve': equity_curve_data,  # 使用列表格式
+                            'equity_curve': equity_curve_data,  # 使用缓存的 equity_curve_data，不更新缓存
                             'trades': trades_data,  # 从完整回测获取所有 trades
                             'is_cached': True,
                             'last_updated': cached_data.get('last_updated', 'N/A')
                         }
                         print(f"  ✅ {symbol}: Using cached equity curve, got {num_trades} trades from full backtest")
+                        print(f"     Final value from cache: ${final_value:,.2f} (NOT updating cache with backtest equity_curve)")
                     except Exception as e:
                         print(f"  ⚠️  Error running full backtest for trades: {str(e)}")
                         print(f"     Using cached data without trades")
@@ -528,28 +531,62 @@ def update_monitor_data():
                     print(f"     Requested end_date: {end_date} (previous trading day: {prev_trading_day})")
                     
                     # 遍历 Series 的日期索引和值，只更新到上一个交易日
+                    # 但是，如果缓存中已经存在该日期的值，且该值不是初始值（10000），则不要覆盖
                     last_valid_value = None
                     last_valid_date = None
+                    cached_equity_series_check = cache_manager.get_equity_curve_series(symbol)
+                    
                     for date_idx, value in full_result.equity_curve.items():
                         date_str = date_idx.strftime('%Y-%m-%d')
                         date_dt = datetime.strptime(date_str, '%Y-%m-%d')
                         
                         # 只更新到上一个交易日的数据
                         if date_dt <= prev_trading_day_dt:
-                            cache_manager.update_equity_curve(symbol, {
-                                'date': date_str,
-                                'value': value
-                            })
-                            last_valid_value = value
-                            last_valid_date = date_str
+                            # 检查缓存中是否已经有该日期的值，且该值不是初始值（10000）
+                            should_update = True
+                            if cached_equity_series_check is not None and isinstance(cached_equity_series_check.index, pd.DatetimeIndex):
+                                if date_dt in cached_equity_series_check.index:
+                                    cached_value = cached_equity_series_check[date_dt]
+                                    # 如果缓存中的值不是初始值（10000），且新值也是初始值，说明可能是数据不足，不要覆盖
+                                    if abs(cached_value - 10000.0) > 0.01 and abs(value - 10000.0) < 0.01:
+                                        should_update = False
+                                        print(f"  ⚠️  Skipping update for {date_str}: cache has ${cached_value:.2f}, backtest returned ${value:.2f} (likely data issue)")
+                            
+                            if should_update:
+                                cache_manager.update_equity_curve(symbol, {
+                                    'date': date_str,
+                                    'value': value
+                                })
+                                last_valid_value = value
+                                last_valid_date = date_str
+                            else:
+                                # 即使不更新，也要记录最后一个有效值（使用缓存中的值）
+                                if cached_equity_series_check is not None and isinstance(cached_equity_series_check.index, pd.DatetimeIndex):
+                                    if date_dt in cached_equity_series_check.index:
+                                        last_valid_value = cached_equity_series_check[date_dt]
+                                        last_valid_date = date_str
                     
                     # 如果最后一个有效日期不是上一个交易日，用最后一个有效值填充
+                    # 但是，如果缓存中已经存在该日期的值，且该值不是初始值（10000），则不要覆盖
                     if last_valid_date and last_valid_date < prev_trading_day:
-                        cache_manager.update_equity_curve(symbol, {
-                            'date': prev_trading_day,
-                            'value': last_valid_value
-                        })
-                        print(f"  📅 Padding {prev_trading_day} with {last_valid_date} value: ${last_valid_value:.2f}")
+                        # 检查缓存中是否已经有该日期的值
+                        cached_equity_series = cache_manager.get_equity_curve_series(symbol)
+                        should_pad = True
+                        if cached_equity_series is not None and isinstance(cached_equity_series.index, pd.DatetimeIndex):
+                            prev_trading_day_dt_obj = datetime.strptime(prev_trading_day, '%Y-%m-%d')
+                            if prev_trading_day_dt_obj in cached_equity_series.index:
+                                cached_value = cached_equity_series[prev_trading_day_dt_obj]
+                                # 如果缓存中的值不是初始值（10000），说明已经有正确的数据，不要覆盖
+                                if abs(cached_value - 10000.0) > 0.01:
+                                    should_pad = False
+                                    print(f"  ⚠️  Skipping padding for {prev_trading_day}: cache already has value ${cached_value:.2f} (not initial capital)")
+                        
+                        if should_pad:
+                            cache_manager.update_equity_curve(symbol, {
+                                'date': prev_trading_day,
+                                'value': last_valid_value
+                            })
+                            print(f"  📅 Padding {prev_trading_day} with {last_valid_date} value: ${last_valid_value:.2f}")
                 else:
                     # 如果不是 DatetimeIndex，使用旧的逻辑（向后兼容）
                     for i, value in enumerate(full_result.equity_curve):
