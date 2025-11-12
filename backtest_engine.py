@@ -344,21 +344,54 @@ class OptionBacktest:
             last_date = data.index[-1].strftime('%Y-%m-%d')
             last_price = data.iloc[-1]['close']
             
-            exit_price = self._get_option_price(
-                symbol, last_date, last_price, open_trade.strike, open_trade.strategy, 0
-            )
+            # 检查是否真的到期了（到期日期 <= 最后日期）
+            expiry_date = datetime.strptime(open_trade.expiry, '%Y-%m-%d')
+            last_date_dt = datetime.strptime(last_date, '%Y-%m-%d')
+            entry_date_dt = datetime.strptime(open_trade.entry_date, '%Y-%m-%d')
+            
+            # 计算距离到期的天数
+            days_to_expiry = (expiry_date - last_date_dt).days
+            
+            # 如果期权已经到期（days_to_expiry <= 0），标记为 expired
+            # 否则，标记为 open（未平仓，但未到期）
+            if days_to_expiry <= 0:
+                # 期权已到期，使用到期时的价值（通常为 0 或内在价值）
+                exit_price = self._get_option_price(
+                    symbol, last_date, last_price, open_trade.strike, open_trade.strategy, 0
+                )
+                open_trade.status = 'expired'
+            else:
+                # 期权未到期，但回测数据已结束，使用最后一天的价值
+                exit_price = self._get_option_price(
+                    symbol, last_date, last_price, open_trade.strike, open_trade.strategy, days_to_expiry
+                )
+                # 如果 exit_date 和 entry_date 相同，说明是同一天入场，不应该设置 exit_date
+                if last_date_dt > entry_date_dt:
+                    open_trade.status = 'open'  # 未到期，但回测数据已结束
+                else:
+                    # 同一天入场和结束，不设置 exit_date，保持为 open
+                    open_trade.status = 'open'
+                    exit_price = open_trade.entry_price  # 使用入场价格
             
             pnl = (exit_price - open_trade.entry_price) * open_trade.shares * 100
             pnl_pct = pnl / (open_trade.entry_price * open_trade.shares * 100)
             
-            open_trade.exit_date = last_date
-            open_trade.exit_price = exit_price
-            open_trade.exit_underlying = last_price
-            open_trade.pnl = pnl
-            open_trade.pnl_pct = pnl_pct
-            open_trade.status = 'expired'
+            # 只有当 exit_date 和 entry_date 不同时才设置 exit_date
+            if last_date_dt > entry_date_dt:
+                open_trade.exit_date = last_date
+                open_trade.exit_price = exit_price
+                open_trade.exit_underlying = last_price
+                open_trade.pnl = pnl
+                open_trade.pnl_pct = pnl_pct
+            else:
+                # 同一天入场和结束，不设置 exit_date 和 exit_price
+                open_trade.exit_date = None
+                open_trade.exit_price = None
+                open_trade.exit_underlying = None
+                open_trade.pnl = None
+                open_trade.pnl_pct = None
             
-            self.current_capital += pnl
+            self.current_capital += pnl if pnl is not None else 0
             trades.append(open_trade)
         
         # 计算结果

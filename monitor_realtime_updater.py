@@ -293,14 +293,29 @@ def update_monitor_data():
                                 continue
                     
                     # 检查最后一个日期是否是上一个交易日，如果不是，用最后一个有效值填充
+                    # 但是，如果缓存中已经存在该日期的值，且该值不是初始值（10000），则使用缓存中的值
                     if len(equity_curve_data) > 0:
                         last_date_str = equity_curve_data[-1]['date']
                         last_date_dt = datetime.strptime(last_date_str, '%Y-%m-%d')
                         if last_date_dt < prev_trading_day_dt:
-                            # 用最后一个有效值填充上一个交易日
-                            last_value = equity_curve_data[-1]['value']
-                            equity_curve_data.append({'date': prev_trading_day, 'value': float(last_value)})
-                            print(f"  📅 Padding {prev_trading_day} with previous value: ${last_value:.2f}")
+                            # 检查缓存中是否已经有该日期的值
+                            prev_trading_day_dt_obj = datetime.strptime(prev_trading_day, '%Y-%m-%d')
+                            should_pad = True
+                            if isinstance(equity_curve_series.index, pd.DatetimeIndex):
+                                if prev_trading_day_dt_obj in equity_curve_series.index:
+                                    cached_value = equity_curve_series[prev_trading_day_dt_obj]
+                                    # 如果缓存中的值不是初始值（10000），说明已经有正确的数据，使用缓存中的值
+                                    if abs(cached_value - 10000.0) > 0.01:
+                                        should_pad = False
+                                        # 使用缓存中的值，而不是 padding
+                                        equity_curve_data.append({'date': prev_trading_day, 'value': float(cached_value)})
+                                        print(f"  ⚠️  Using cached value for {prev_trading_day}: ${cached_value:.2f} (not initial capital)")
+                            
+                            if should_pad:
+                                # 用最后一个有效值填充上一个交易日
+                                last_value = equity_curve_data[-1]['value']
+                                equity_curve_data.append({'date': prev_trading_day, 'value': float(last_value)})
+                                print(f"  📅 Padding {prev_trading_day} with previous value: ${last_value:.2f}")
                     
                     # 使用最后一个值作为 final_value（应该是上一个交易日），确保正确计算 total_return
                     final_value = float(equity_curve_data[-1]['value']) if len(equity_curve_data) > 0 else 10000.0
@@ -335,7 +350,9 @@ def update_monitor_data():
                                 'exit_price': t.exit_price if t.exit_price else None,
                                 'pnl': t.pnl if t.pnl is not None else None,
                                 'pnl_pct': t.pnl_pct if t.pnl_pct is not None else None,
-                                'status': t.status
+                                'status': t.status,
+                                'expiry': t.expiry if hasattr(t, 'expiry') else None,
+                                'symbol': t.symbol if hasattr(t, 'symbol') else symbol
                             }
                             for t in full_backtest_result.trades
                         ] if full_backtest_result.trades else []
@@ -636,14 +653,30 @@ def update_monitor_data():
                             equity_curve_data.append({'date': date_str, 'value': float(value)})
                     
                     # 检查最后一个日期是否是上一个交易日，如果不是，用最后一个有效值填充
+                    # 但是，如果缓存中已经存在该日期的值，且该值不是初始值（10000），则使用缓存中的值
                     if len(equity_curve_data) > 0:
                         last_date_str = equity_curve_data[-1]['date']
                         last_date_dt = datetime.strptime(last_date_str, '%Y-%m-%d')
                         if last_date_dt < prev_trading_day_dt:
-                            # 用最后一个有效值填充上一个交易日
-                            last_value = equity_curve_data[-1]['value']
-                            equity_curve_data.append({'date': prev_trading_day, 'value': float(last_value)})
-                            print(f"  📅 Padding {prev_trading_day} with previous value: ${last_value:.2f}")
+                            # 检查缓存中是否已经有该日期的值
+                            prev_trading_day_dt_obj = datetime.strptime(prev_trading_day, '%Y-%m-%d')
+                            should_pad = True
+                            cached_equity_series_for_padding = cache_manager.get_equity_curve_series(symbol)
+                            if cached_equity_series_for_padding is not None and isinstance(cached_equity_series_for_padding.index, pd.DatetimeIndex):
+                                if prev_trading_day_dt_obj in cached_equity_series_for_padding.index:
+                                    cached_value = cached_equity_series_for_padding[prev_trading_day_dt_obj]
+                                    # 如果缓存中的值不是初始值（10000），说明已经有正确的数据，使用缓存中的值
+                                    if abs(cached_value - 10000.0) > 0.01:
+                                        should_pad = False
+                                        # 使用缓存中的值，而不是 padding
+                                        equity_curve_data.append({'date': prev_trading_day, 'value': float(cached_value)})
+                                        print(f"  ⚠️  Using cached value for {prev_trading_day}: ${cached_value:.2f} (not initial capital)")
+                            
+                            if should_pad:
+                                # 用最后一个有效值填充上一个交易日
+                                last_value = equity_curve_data[-1]['value']
+                                equity_curve_data.append({'date': prev_trading_day, 'value': float(last_value)})
+                                print(f"  📅 Padding {prev_trading_day} with previous value: ${last_value:.2f}")
                 else:
                     # 如果不是 DatetimeIndex，使用旧的逻辑（向后兼容）
                     for i, value in enumerate(full_result.equity_curve):
@@ -657,9 +690,24 @@ def update_monitor_data():
                         last_date_str = equity_curve_data[-1]['date']
                         last_date_dt = datetime.strptime(last_date_str, '%Y-%m-%d')
                         if last_date_dt < prev_trading_day_dt:
-                            last_value = equity_curve_data[-1]['value']
-                            equity_curve_data.append({'date': prev_trading_day, 'value': float(last_value)})
-                            print(f"  📅 Padding {prev_trading_day} with previous value: ${last_value:.2f}")
+                            # 检查缓存中是否已经有该日期的值
+                            prev_trading_day_dt_obj = datetime.strptime(prev_trading_day, '%Y-%m-%d')
+                            should_pad = True
+                            cached_equity_series_for_padding = cache_manager.get_equity_curve_series(symbol)
+                            if cached_equity_series_for_padding is not None and isinstance(cached_equity_series_for_padding.index, pd.DatetimeIndex):
+                                if prev_trading_day_dt_obj in cached_equity_series_for_padding.index:
+                                    cached_value = cached_equity_series_for_padding[prev_trading_day_dt_obj]
+                                    # 如果缓存中的值不是初始值（10000），说明已经有正确的数据，使用缓存中的值
+                                    if abs(cached_value - 10000.0) > 0.01:
+                                        should_pad = False
+                                        # 使用缓存中的值，而不是 padding
+                                        equity_curve_data.append({'date': prev_trading_day, 'value': float(cached_value)})
+                                        print(f"  ⚠️  Using cached value for {prev_trading_day}: ${cached_value:.2f} (not initial capital)")
+                            
+                            if should_pad:
+                                last_value = equity_curve_data[-1]['value']
+                                equity_curve_data.append({'date': prev_trading_day, 'value': float(last_value)})
+                                print(f"  📅 Padding {prev_trading_day} with previous value: ${last_value:.2f}")
                 
                 # 确保 final_value 和 total_return 基于实际的最后一个值（应该是上一个交易日）
                 if len(equity_curve_data) > 0:
@@ -687,7 +735,9 @@ def update_monitor_data():
                             'exit_price': t.exit_price if t.exit_price else None,
                             'pnl': t.pnl if t.pnl is not None else None,
                             'pnl_pct': t.pnl_pct if t.pnl_pct is not None else None,
-                            'status': t.status
+                            'status': t.status,
+                            'expiry': t.expiry if hasattr(t, 'expiry') else None,
+                            'symbol': t.symbol if hasattr(t, 'symbol') else symbol
                         }
                         for t in full_result.trades
                     ] if full_result.trades else [],

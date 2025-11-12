@@ -2858,6 +2858,9 @@ elif display_page == "📈 Real-time Monitor":
         
         # Calculate total portfolio value
         total_portfolio_value = sum(r['final_value'] for r in monitor_results)
+        # Calculate initial capital (each symbol starts with $10,000)
+        initial_capital_per_symbol = 10000.0
+        total_initial_capital = len(monitor_results) * initial_capital_per_symbol
         prev_total_value = st.session_state.monitor_previous_values.get('total_value', total_portfolio_value)
         
         with col1:
@@ -2893,8 +2896,9 @@ elif display_page == "📈 Real-time Monitor":
         
         # Total Portfolio Value with live indicator
         st.markdown("---")
-        portfolio_change = total_portfolio_value - prev_total_value
-        portfolio_change_pct = (portfolio_change / prev_total_value * 100) if prev_total_value > 0 else 0
+        # Calculate change from initial capital (not from previous session state)
+        portfolio_change = total_portfolio_value - total_initial_capital
+        portfolio_change_pct = (portfolio_change / total_initial_capital * 100) if total_initial_capital > 0 else 0
         
         st.markdown(f"""
         <div style="text-align: center; padding: 1.5rem; background: #FFFFFF; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1); margin: 1rem 0;">
@@ -3097,15 +3101,80 @@ elif display_page == "📈 Real-time Monitor":
                 if result.get('trades') and len(result['trades']) > 0:
                     trades_data = []
                     for i, trade in enumerate(result['trades'], 1):
+                        # 计算 days_to_expiry（期权到期日 - entry 日期）和构建期权标的
+                        days_to_expiry = None
+                        option_symbol = None
+                        
+                        if isinstance(trade, dict):
+                            expiry = trade.get('expiry')
+                            entry_date = trade.get('entry_date')
+                            symbol = trade.get('symbol', result.get('symbol', 'N/A'))
+                            strike = trade.get('strike')
+                            strategy = trade.get('strategy', '')
+                            
+                            if entry_date:
+                                try:
+                                    from datetime import datetime, timedelta
+                                    entry_dt = datetime.strptime(entry_date, '%Y-%m-%d')
+                                    
+                                    # 如果有 expiry，使用它；否则估算为 entry_date + 30 天
+                                    if expiry:
+                                        expiry_dt = datetime.strptime(expiry, '%Y-%m-%d')
+                                    else:
+                                        # 后备：默认 30 天到期
+                                        expiry_dt = entry_dt + timedelta(days=30)
+                                        expiry = expiry_dt.strftime('%Y-%m-%d')
+                                    
+                                    days_to_expiry = (expiry_dt - entry_dt).days
+                                    
+                                    # 构建期权标的：股票代码 + 到期日 + 行权价 + 类型
+                                    option_type = 'CALL' if 'call' in strategy.lower() else 'PUT'
+                                    if strike is not None:
+                                        option_symbol = f"{symbol} {expiry} ${strike:.0f} {option_type}"
+                                except:
+                                    pass
+                        else:
+                            if hasattr(trade, 'entry_date'):
+                                try:
+                                    from datetime import datetime, timedelta
+                                    entry_dt = datetime.strptime(trade.entry_date, '%Y-%m-%d')
+                                    
+                                    # 如果有 expiry，使用它；否则估算为 entry_date + 30 天
+                                    if hasattr(trade, 'expiry') and trade.expiry:
+                                        expiry_dt = datetime.strptime(trade.expiry, '%Y-%m-%d')
+                                        expiry = trade.expiry
+                                    else:
+                                        # 后备：默认 30 天到期
+                                        expiry_dt = entry_dt + timedelta(days=30)
+                                        expiry = expiry_dt.strftime('%Y-%m-%d')
+                                    
+                                    days_to_expiry = (expiry_dt - entry_dt).days
+                                    
+                                    # 构建期权标的
+                                    symbol = trade.symbol if hasattr(trade, 'symbol') else result.get('symbol', 'N/A')
+                                    strike = trade.strike if hasattr(trade, 'strike') else None
+                                    strategy = trade.strategy if hasattr(trade, 'strategy') else ''
+                                    option_type = 'CALL' if 'call' in strategy.lower() else 'PUT'
+                                    if strike is not None:
+                                        option_symbol = f"{symbol} {expiry} ${strike:.0f} {option_type}"
+                                except:
+                                    pass
+                        
+                        # 如果没有构建成功，使用股票标的作为后备
+                        if option_symbol is None:
+                            if isinstance(trade, dict):
+                                option_symbol = trade.get('symbol', result.get('symbol', 'N/A'))
+                            else:
+                                option_symbol = trade.symbol if hasattr(trade, 'symbol') else result.get('symbol', 'N/A')
+                        
                         # 处理两种格式：Trade 对象或字典
                         if isinstance(trade, dict):
                             # 从 JSON 加载的字典格式
                             trades_data.append({
                                 '#': i,
+                                'Symbol': option_symbol,
                                 'Entry': trade.get('entry_date', 'N/A'),
                                 'Exit': trade.get('exit_date', '—') if trade.get('exit_date') else '—',
-                                'Type': trade.get('strategy', 'N/A').upper() if trade.get('strategy') else 'N/A',
-                                'Strike': f"${trade.get('strike', 0):.2f}" if trade.get('strike') is not None else 'N/A',
                                 'Entry Price': f"${trade.get('entry_price', 0):.2f}",
                                 'Exit Price': f"${trade.get('exit_price', 0):.2f}" if trade.get('exit_price') else '—',
                                 'P&L': f"${trade.get('pnl', 0):+,.2f}" if trade.get('pnl') is not None else '—',
@@ -3116,10 +3185,9 @@ elif display_page == "📈 Real-time Monitor":
                             # Trade 对象格式
                             trades_data.append({
                                 '#': i,
+                                'Symbol': option_symbol,
                                 'Entry': trade.entry_date,
                                 'Exit': trade.exit_date if trade.exit_date else '—',
-                                'Type': trade.strategy.upper() if hasattr(trade, 'strategy') else 'N/A',
-                                'Strike': f"${trade.strike:.2f}" if hasattr(trade, 'strike') else 'N/A',
                                 'Entry Price': f"${trade.entry_price:.2f}",
                                 'Exit Price': f"${trade.exit_price:.2f}" if trade.exit_price else '—',
                                 'P&L': f"${trade.pnl:+,.2f}" if trade.pnl is not None else '—',
@@ -3131,6 +3199,22 @@ elif display_page == "📈 Real-time Monitor":
                     
                     # 直接使用 st.table() 替代 st.dataframe()
                     # st.dataframe() 在当前环境中渲染为空白，改用更可靠的 st.table()
+                    # 使用自定义 CSS 缩小字体
+                    st.markdown("""
+                    <style>
+                    div[data-testid="stTable"] table {
+                        font-size: 0.85rem;
+                    }
+                    div[data-testid="stTable"] th {
+                        font-size: 0.85rem;
+                        padding: 0.4rem 0.5rem;
+                    }
+                    div[data-testid="stTable"] td {
+                        font-size: 0.85rem;
+                        padding: 0.4rem 0.5rem;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
                     st.table(trades_df)
                 elif result.get('num_trades', 0) > 0:
                     st.warning(f"⚠️ Trade details not available. {result['num_trades']} trades were executed, but detailed records were not saved.")
