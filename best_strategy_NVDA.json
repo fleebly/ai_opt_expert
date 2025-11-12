@@ -1,0 +1,30 @@
+{
+  "name": "MACR_CCIE_WILL",
+  "signal_weights": {
+    "ma_crossunder": 0.004313904566430435,
+    "cci_extreme": 0.03501069362906017,
+    "williams_overbought": 0.9606754018045093
+  },
+  "params": {
+    "profit_target": 5.0,
+    "stop_loss": -0.5,
+    "max_holding_days": 30,
+    "position_size": 0.1
+  },
+  "backtest_performance": {
+    "total_return": 8.192769209786773,
+    "win_rate": 0.4166666666666667,
+    "sharpe_ratio": 1.886076386769814,
+    "max_drawdown": -0.39631443641976066,
+    "num_trades": 12,
+    "avg_win": 24422.273720743986,
+    "avg_loss": -5740.525215121738
+  },
+  "metadata": {
+    "symbol": "NVDA",
+    "best_return": 8.192769209786773,
+    "generated_at": "2025-11-11 21:03:29",
+    "backtest_period": "2024-01-01 to 2025-04-01",
+    "evaluation_period": "2025-04-01 to 2025-11-01"
+  }
+}

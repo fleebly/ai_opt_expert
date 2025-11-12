@@ -1,0 +1,30 @@
+{
+  "name": "MACD_RSI_BB",
+  "signal_weights": {
+    "macd_crossover": 0.3,
+    "rsi_oversold": 0.3,
+    "bb_compression": 0.4
+  },
+  "params": {
+    "profit_target": 5.0,
+    "stop_loss": -0.5,
+    "max_holding_days": 30,
+    "position_size": 0.1
+  },
+  "backtest_performance": {
+    "total_return": 24.48096393652902,
+    "win_rate": 0.47058823529411764,
+    "sharpe_ratio": 2.1740836110076334,
+    "max_drawdown": -0.30219212754200525,
+    "num_trades": 17,
+    "avg_win": 33197.21815384404,
+    "avg_loss": -2307.567318384686
+  },
+  "metadata": {
+    "symbol": "PLTR",
+    "best_return": 24.48096393652902,
+    "generated_at": "2025-11-10 20:04:17",
+    "backtest_period": "2024-01-01 to 2025-04-01",
+    "evaluation_period": "2025-04-01 to 2025-11-01"
+  }
+}

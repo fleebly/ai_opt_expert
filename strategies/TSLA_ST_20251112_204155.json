@@ -12,18 +12,18 @@
     "position_size": 0.1
   },
   "backtest_performance": {
-    "total_return": 28.72368184859507,
-    "win_rate": 0.6363636363636364,
-    "sharpe_ratio": 2.509156588225895,
-    "max_drawdown": -0.3447860125361689,
-    "num_trades": 11,
-    "avg_win": 43695.05194052588,
-    "avg_loss": -4657.136274432598
+    "total_return": 24793.51616969669,
+    "win_rate": 0.2972972972972973,
+    "sharpe_ratio": 2.322193868271485,
+    "max_drawdown": -0.4631212090461756,
+    "num_trades": 37,
+    "avg_win": 23756292.7155715,
+    "avg_loss": -514771.46824306407
   },
   "metadata": {
-    "symbol": "BABA",
-    "best_return": 28.72368184859507,
-    "generated_at": "2025-11-11 21:12:57",
+    "symbol": "TSLA",
+    "best_return": 24793.51616969669,
+    "generated_at": "2025-11-12 20:41:55",
     "backtest_period": "2024-01-01 to 2025-04-01",
     "evaluation_period": "2025-04-01 to 2025-11-01"
   }

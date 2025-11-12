@@ -101,67 +101,73 @@ def update_monitor_data():
         print("❌ No strategies found")
         return
     
-    # 按标的分组，计算每个策略从回测结束日期到上一个交易日的实际收益，选择最优策略
-    print("🔍 Evaluating strategies based on real-time performance (from backtest end date to previous trading day)...")
+    # 按标的分组，根据 backtest_performance.total_return 选择前10个策略，然后从 2025-04-01 到最新日期回测
+    print("🔍 Selecting top 10 strategies by backtest_performance.total_return, then backtesting from 2025-04-01 to latest date...")
     
     monitor_start_date = "2025-04-01"  # 从配置或环境变量读取
     # 使用上一个交易日，因为当前日期可能还没有实时数据
     end_date = get_previous_trading_day()
     print(f"📅 Using previous trading day as end date: {end_date}")
     
-    # 按标的分组策略
+    # 按标的分组策略，使用 (name, filename) 作为唯一key去重
     strategies_by_symbol = {}
+    strategy_keys = {}  # 存储 (symbol, name, filename) -> strategy 的映射，用于去重
+    
     for strategy in strategies:
         symbol = strategy['symbol']
         if not symbol:
             continue
+        
+        # 使用 (name, filename) 作为唯一key
+        strategy_key = (symbol, strategy['name'], strategy['filename'])
+        if strategy_key in strategy_keys:
+            # 如果已存在相同的key，跳过（保留第一个）
+            continue
+        
+        strategy_keys[strategy_key] = strategy
+        
         if symbol not in strategies_by_symbol:
             strategies_by_symbol[symbol] = []
         strategies_by_symbol[symbol].append(strategy)
     
-    # 对每个标的，计算每个策略的实际收益并选择最优
+    # 对每个标的，根据 backtest_performance.total_return 排序，取前10个
+    # 然后从 2025-04-01 到最新日期进行回测，选择最优策略
     symbol_best_strategies = {}
-    symbol_strategy_returns = {}  # 存储每个策略的实际收益
+    symbol_best_strategy_results = {}  # 存储最优策略的回测结果
     
     # 保存策略实际收益到缓存，供前端使用
     strategy_performance_cache = {}
     
     for symbol, symbol_strategies in strategies_by_symbol.items():
-        print(f"\n  📊 Evaluating {len(symbol_strategies)} strategies for {symbol}...")
+        print(f"\n  📊 Processing {symbol}...")
+        
+        # 根据 backtest_performance.total_return 排序，取前10个
+        strategies_with_return = []
+        for strategy in symbol_strategies:
+            backtest_perf = strategy.get('backtest_performance', {})
+            total_return = backtest_perf.get('total_return', -999)
+            strategies_with_return.append((strategy, total_return))
+        
+        # 按 total_return 降序排序，取前10个
+        strategies_with_return.sort(key=lambda x: x[1], reverse=True)
+        top_strategies = [s[0] for s in strategies_with_return[:10]]
+        
+        print(f"  📈 Selected top {len(top_strategies)} strategies by backtest_performance.total_return:")
+        for idx, strategy in enumerate(top_strategies, 1):
+            backtest_perf = strategy.get('backtest_performance', {})
+            total_return = backtest_perf.get('total_return', -999)
+            print(f"    {idx}. {strategy['name']} ({strategy['filename']}): {total_return:+.2%}")
+        
+        # 对这10个策略，从 2025-04-01 到最新日期进行回测
         best_strategy = None
         best_return = -999
         best_strategy_name = None
+        best_strategy_filename = None
         
-        for strategy in symbol_strategies:
+        print(f"\n  🔄 Starting backtest evaluation for {len(top_strategies)} strategies...")
+        
+        for idx, strategy in enumerate(top_strategies, 1):
             try:
-                # 获取回测结束日期
-                metadata = strategy.get('metadata', {})
-                backtest_period = metadata.get('backtest_period', '')
-                
-                # 从 backtest_period 解析结束日期，格式: "2024-01-01 to 2025-05-01"
-                if backtest_period and ' to ' in backtest_period:
-                    backtest_end_date = backtest_period.split(' to ')[1].strip()
-                else:
-                    # 如果没有回测期间信息，使用监控开始日期
-                    backtest_end_date = monitor_start_date
-                
-                # 确保回测结束日期不晚于上一个交易日
-                backtest_end_dt = datetime.strptime(backtest_end_date, '%Y-%m-%d')
-                prev_trading_day_dt = datetime.strptime(end_date, '%Y-%m-%d')
-                
-                if backtest_end_dt >= prev_trading_day_dt:
-                    # 回测结束日期已经是上一个交易日或未来，使用监控开始日期
-                    backtest_end_date = monitor_start_date
-                    backtest_end_dt = datetime.strptime(backtest_end_date, '%Y-%m-%d')
-                
-                # 如果回测结束日期到上一个交易日的间隔太短（少于3天），使用监控开始日期
-                days_diff = (prev_trading_day_dt - backtest_end_dt).days
-                if days_diff < 3:
-                    backtest_end_date = monitor_start_date
-                
-                # 运行从回测结束日期到上一个交易日的回测
-                print(f"    🔄 Testing '{strategy['name']}' from {backtest_end_date} to {end_date} (previous trading day)...")
-                
                 # 加载策略配置
                 with open(strategy['path'], 'r', encoding='utf-8') as f:
                     strategy_config = json.load(f)
@@ -169,11 +175,23 @@ def update_monitor_data():
                 params = strategy_config.get('params', {})
                 signal_weights = strategy_config.get('signal_weights', {})
                 
+                # 运行从 2025-04-01 到最新日期的回测
+                strategy_key = f"{strategy['name']}_{strategy['filename']}"
+                print(f"\n    [{idx}/{len(top_strategies)}] 🔄 Testing Strategy: '{strategy['name']}'")
+                print(f"        📁 File: {strategy['filename']}")
+                print(f"        📅 Period: {monitor_start_date} to {end_date}")
+                print(f"        ⚙️  Params: profit_target={params.get('profit_target', 5.0)}%, stop_loss={params.get('stop_loss', -0.5)}%, max_holding={params.get('max_holding_days', 30)}d")
+                if signal_weights:
+                    signals_str = ", ".join([f"{k}={v:.2f}" for k, v in list(signal_weights.items())[:3]])
+                    if len(signal_weights) > 3:
+                        signals_str += f", ... (+{len(signal_weights)-3} more)"
+                    print(f"        📊 Signals: {signals_str}")
+                
                 # 运行回测
                 backtest = OptionBacktest(initial_capital=10000, use_real_prices=True)
                 result = backtest.run_backtest(
                     symbol=symbol,
-                    start_date=backtest_end_date,
+                    start_date=monitor_start_date,
                     end_date=end_date,
                     strategy='auto',
                     entry_signal=signal_weights,
@@ -187,36 +205,50 @@ def update_monitor_data():
                 if len(result.equity_curve) > 0:
                     final_value = result.equity_curve[-1]
                     actual_return = (final_value - 10000) / 10000
+                    strategy_evaluation_result = result
                 else:
                     actual_return = -999  # 没有数据
+                    strategy_evaluation_result = None
                 
-                strategy_key = f"{symbol}_{strategy['name']}"
-                symbol_strategy_returns[strategy_key] = actual_return
-                
-                # 保存到缓存
+                # 保存到缓存（使用策略名和文件名作为key）
                 if symbol not in strategy_performance_cache:
                     strategy_performance_cache[symbol] = {}
-                strategy_performance_cache[symbol][strategy['name']] = {
+                cache_key = f"{strategy['name']}_{strategy['filename']}"
+                strategy_performance_cache[symbol][cache_key] = {
                     'actual_return': actual_return,
-                    'evaluation_period': f"{backtest_end_date} to {end_date}",
-                    'evaluated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    'evaluation_period': f"{monitor_start_date} to {end_date}",
+                    'evaluated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'strategy_name': strategy['name'],
+                    'filename': strategy['filename']
                 }
                 
-                print(f"      → Actual return: {actual_return:+.2%} (from {backtest_end_date} to {end_date})")
+                print(f"        ✅ Completed: Actual return = {actual_return:+.2%} | Final value = ${final_value:,.2f} | Trades = {len(result.trades)}")
                 
                 # 选择收益最大的策略
                 if actual_return > best_return:
                     best_return = actual_return
                     best_strategy = strategy
                     best_strategy_name = strategy['name']
+                    best_strategy_filename = strategy['filename']
+                    # 保存最优策略的回测结果
+                    best_strategy_result = strategy_evaluation_result
+                    print(f"        🏆 New best strategy! (Previous best: {best_return:+.2%})")
                     
             except Exception as e:
-                print(f"      ❌ Error evaluating '{strategy['name']}': {str(e)}")
+                print(f"        ❌ Error evaluating '{strategy['name']}' ({strategy['filename']}): {str(e)}")
+                import traceback
+                print(f"        📋 Traceback: {traceback.format_exc().split(chr(10))[-3] if traceback.format_exc() else 'N/A'}")
                 continue
         
         if best_strategy:
             symbol_best_strategies[symbol] = best_strategy
-            print(f"  ✅ {symbol}: Selected '{best_strategy_name}' (actual return: {best_return:+.2%})")
+            # 保存最优策略的回测结果和收益，供后续使用
+            if 'best_strategy_result' in locals() and best_strategy_result is not None:
+                symbol_best_strategy_results[symbol] = {
+                    'result': best_strategy_result,
+                    'return': best_return
+                }
+            print(f"  ✅ {symbol}: Selected '{best_strategy_name}' ({best_strategy_filename}) (actual return: {best_return:+.2%})")
         else:
             print(f"  ⚠️  {symbol}: No valid strategy found")
     
@@ -321,23 +353,39 @@ def update_monitor_data():
                     final_value = float(equity_curve_data[-1]['value']) if len(equity_curve_data) > 0 else 10000.0
                     total_return = (final_value - 10000) / 10000
                     
-                    # 即使数据已经是最新，也需要运行完整回测来获取所有 trades
-                    # 但是，不要用完整回测的 equity_curve 更新缓存，因为缓存中可能已经有更新的数据
-                    print(f"  📊 Data is up to date, running full backtest to get all trades...")
-                    print(f"  ⚠️  Note: Will NOT update cache equity_curve (using cached data to preserve latest values)")
+                    # 如果策略选择阶段已经运行了从 monitor_start_date 到 end_date 的回测，
+                    # 则直接使用策略选择阶段的回测结果，避免重复运行
+                    use_evaluation_result = False
+                    if symbol in symbol_best_strategy_results:
+                        # 策略选择阶段已经运行了从 monitor_start_date 到 end_date 的回测
+                        use_evaluation_result = True
+                        eval_data = symbol_best_strategy_results[symbol]
+                        eval_return = eval_data.get('return', 0)
+                        print(f"  ✅ Using strategy evaluation result (from {monitor_start_date} to {end_date})")
+                        print(f"     This ensures consistency with strategy selection ({eval_return:+.2%})")
+                    
                     try:
-                        backtest = OptionBacktest(initial_capital=10000, use_real_prices=True)
-                        full_backtest_result = backtest.run_backtest(
-                            symbol=symbol,
-                            start_date=monitor_start_date,
-                            end_date=end_date,
-                            strategy='auto',
-                            entry_signal=signal_weights,
-                            profit_target=params.get('profit_target', 5.0),
-                            stop_loss=params.get('stop_loss', -0.5),
-                            max_holding_days=params.get('max_holding_days', 30),
-                            position_size=params.get('position_size', 0.1)
-                        )
+                        if use_evaluation_result:
+                            # 使用策略选择阶段的回测结果
+                            eval_data = symbol_best_strategy_results[symbol]
+                            full_backtest_result = eval_data['result']
+                        else:
+                            # 运行完整回测来获取所有 trades
+                            # 但是，不要用完整回测的 equity_curve 更新缓存，因为缓存中可能已经有更新的数据
+                            print(f"  📊 Data is up to date, running full backtest to get all trades...")
+                            print(f"  ⚠️  Note: Will NOT update cache equity_curve (using cached data to preserve latest values)")
+                            backtest = OptionBacktest(initial_capital=10000, use_real_prices=True)
+                            full_backtest_result = backtest.run_backtest(
+                                symbol=symbol,
+                                start_date=monitor_start_date,
+                                end_date=end_date,
+                                strategy='auto',
+                                entry_signal=signal_weights,
+                                profit_target=params.get('profit_target', 5.0),
+                                stop_loss=params.get('stop_loss', -0.5),
+                                max_holding_days=params.get('max_holding_days', 30),
+                                position_size=params.get('position_size', 0.1)
+                            )
                         
                         # 序列化 trades
                         trades_data = [
@@ -361,20 +409,46 @@ def update_monitor_data():
                         winning_trades = sum(1 for t in full_backtest_result.trades if t.pnl and t.pnl > 0)
                         win_rate = (winning_trades / num_trades * 100) if num_trades > 0 else 0
                         
+                        # 使用完整回测的结果计算 final_value 和 total_return，确保与策略选择时的实际收益一致
+                        if len(full_backtest_result.equity_curve) > 0:
+                            # 使用完整回测的 equity_curve 计算 final_value
+                            final_value_from_backtest = float(full_backtest_result.equity_curve.iloc[-1])
+                            total_return_from_backtest = (final_value_from_backtest - 10000) / 10000
+                            
+                            # 将完整回测的 equity_curve 转换为列表格式
+                            equity_curve_from_backtest = []
+                            if isinstance(full_backtest_result.equity_curve, pd.Series):
+                                for date_idx, value in full_backtest_result.equity_curve.items():
+                                    date_str = date_idx.strftime('%Y-%m-%d')
+                                    equity_curve_from_backtest.append({'date': date_str, 'value': float(value)})
+                            else:
+                                equity_curve_from_backtest = equity_curve_data  # 回退到缓存数据
+                            
+                            # 使用完整回测的结果
+                            final_value = final_value_from_backtest
+                            total_return = total_return_from_backtest
+                            equity_curve_data = equity_curve_from_backtest
+                            
+                            print(f"  ✅ {symbol}: Using full backtest results (Return={total_return:+.2%}, Final Value=${final_value:,.2f})")
+                            print(f"     Note: Using backtest equity_curve for consistency with strategy selection")
+                        else:
+                            # 如果完整回测没有数据，使用缓存数据
+                            print(f"  ⚠️  Full backtest has no equity curve, using cached data")
+                            print(f"     Final value from cache: ${final_value:,.2f}")
+                        
                         monitor_result = {
                             'symbol': symbol,
                             'strategy_name': strategy['name'],
-                            'total_return': total_return,  # 基于缓存的 equity_curve_data 计算
-                            'final_value': final_value,  # 基于缓存的 equity_curve_data 计算
+                            'total_return': total_return,  # 使用完整回测的结果
+                            'final_value': final_value,  # 使用完整回测的结果
                             'num_trades': num_trades,
                             'win_rate': win_rate,
-                            'equity_curve': equity_curve_data,  # 使用缓存的 equity_curve_data，不更新缓存
+                            'equity_curve': equity_curve_data,  # 使用完整回测的 equity_curve
                             'trades': trades_data,  # 从完整回测获取所有 trades
-                            'is_cached': True,
-                            'last_updated': cached_data.get('last_updated', 'N/A')
+                            'is_cached': False,  # 标记为使用回测结果，不是缓存
+                            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                         }
-                        print(f"  ✅ {symbol}: Using cached equity curve, got {num_trades} trades from full backtest")
-                        print(f"     Final value from cache: ${final_value:,.2f} (NOT updating cache with backtest equity_curve)")
+                        print(f"  ✅ {symbol}: Got {num_trades} trades from full backtest")
                     except Exception as e:
                         print(f"  ⚠️  Error running full backtest for trades: {str(e)}")
                         print(f"     Using cached data without trades")

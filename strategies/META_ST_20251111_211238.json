@@ -1,0 +1,29 @@
+{
+  "name": "MACR_WILL",
+  "signal_weights": {
+    "ma_crossunder": 0.6480386397276836,
+    "williams_overbought": 0.3519613602723165
+  },
+  "params": {
+    "profit_target": 5.0,
+    "stop_loss": -0.5,
+    "max_holding_days": 30,
+    "position_size": 0.1
+  },
+  "backtest_performance": {
+    "total_return": 0.6866371974139053,
+    "win_rate": 0.25,
+    "sharpe_ratio": 1.0964328699754509,
+    "max_drawdown": -0.23866773566240249,
+    "num_trades": 8,
+    "avg_win": 4620.398469022185,
+    "avg_loss": -395.73749398421955
+  },
+  "metadata": {
+    "symbol": "META",
+    "best_return": 0.6866371974139053,
+    "generated_at": "2025-11-11 21:12:38",
+    "backtest_period": "2024-01-01 to 2025-04-01",
+    "evaluation_period": "2025-04-01 to 2025-11-01"
+  }
+}

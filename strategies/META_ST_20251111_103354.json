@@ -1,0 +1,30 @@
+{
+  "name": "MACD_Volume_RSI_Plus1",
+  "signal_weights": {
+    "macd_divergence": 0.5,
+    "volume_surge": 0.3,
+    "rsi_oversold": 0.2
+  },
+  "params": {
+    "profit_target": 5.0,
+    "stop_loss": -0.5,
+    "max_holding_days": 30,
+    "position_size": 0.1
+  },
+  "backtest_performance": {
+    "total_return": 0.7533532455153416,
+    "win_rate": 0.2222222222222222,
+    "sharpe_ratio": 1.101866838349691,
+    "max_drawdown": -0.29609011121409723,
+    "num_trades": 18,
+    "avg_win": 4353.41383425255,
+    "avg_loss": -705.7230629897704
+  },
+  "metadata": {
+    "symbol": "META",
+    "best_return": 0.7533532455153416,
+    "generated_at": "2025-11-11 10:33:54",
+    "backtest_period": "2024-01-01 to 2025-04-01",
+    "evaluation_period": "2025-04-01 to 2025-11-01"
+  }
+}

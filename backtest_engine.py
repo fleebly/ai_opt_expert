@@ -279,21 +279,79 @@ class OptionBacktest:
                             current_strategy = 'long_call'
                             direction_confidence = 0.5
                     
-                    # 动态选择行权价（基于市场条件）
+                    # 动态选择行权价和到期日（基于市场条件）
+                    days_to_expiry = 30  # 默认值
                     try:
                         from strategy_config import DynamicOTMSelector
                         
-                        # 提取市场条件指标
-                        volatility = row.get('bb_width', 0.04) / 0.08  # 归一化
-                        momentum = row.get('rsi', 50) / 50 - 1  # -1 to 1
-                        bb_percentile = row.get('bb_percentile', 0.5)
+                        # 提取市场条件指标，处理 NaN 值
+                        bb_width_raw = row.get('bb_width', 0.04)
+                        bb_percentile_raw = row.get('bb_percentile', 0.5)
+                        rsi_raw = row.get('rsi', 50)
+                        
+                        # 检查并处理 NaN 值
+                        if pd.isna(bb_width_raw) or pd.isna(bb_percentile_raw) or pd.isna(rsi_raw):
+                            # 如果指标是 NaN，使用默认值（中等条件）
+                            volatility = 0.5  # 默认中等波动
+                            bb_percentile = 0.5  # 默认中等百分位
+                            momentum = 0.0  # 默认中等动量
+                        else:
+                            volatility = float(bb_width_raw) / 0.08  # 归一化
+                            momentum = float(rsi_raw) / 50 - 1  # -1 to 1
+                            bb_percentile = float(bb_percentile_raw)
+                        
+                        # 确保值在合理范围内
+                        volatility = max(0.0, min(2.0, volatility))  # 限制在 0-2 范围
+                        bb_percentile = max(0.0, min(1.0, bb_percentile))  # 限制在 0-1 范围
+                        
+                        # 动态选择到期日（7-30天范围）- 基于市场条件从窗口范围筛选
+                        # 高波动或BB压缩时，从7-15天范围中选择更短的到期日以降低时间衰减风险
+                        # 低波动或BB扩张时，从20-30天范围中选择更长的到期日以获得更多时间
+                        # 使用确定性函数基于市场条件计算，确保结果可重复
+                        logger.debug(f"Market conditions: volatility={volatility:.3f}, bb_percentile={bb_percentile:.3f}, momentum={momentum:.3f}")
+                        
+                        if volatility > 0.7 or bb_percentile < 0.3:
+                            # 高波动或压缩：从7-15天范围中选择
+                            # 使用volatility和bb_percentile的组合来确定值（0-1范围映射到7-15）
+                            # 波动率越高或BB压缩越严重，选择越短的到期日
+                            # 但避免总是选择7天，使用更平滑的映射
+                            if volatility > 0.7:
+                                vol_factor = min(1.0, (volatility - 0.7) / 0.3)  # 0-1
+                            else:
+                                vol_factor = 0.0
+                            
+                            if bb_percentile < 0.3:
+                                # 将 bb_percentile 从 [0, 0.3] 映射到 [0, 1]，但避免极端值
+                                # 使用平方根函数使分布更均匀
+                                bb_factor = min(1.0, (0.3 - bb_percentile) / 0.3)
+                                bb_factor = bb_factor ** 0.7  # 使用0.7次方，避免极端值
+                            else:
+                                bb_factor = 0.0
+                            
+                            # 取两者最大值，但限制在合理范围，避免总是选择7天
+                            # 使用更平滑的映射，确保分布更均匀
+                            risk_factor = min(0.85, max(0.2, max(vol_factor, bb_factor)))  # 限制在 0.2-0.85 范围
+                            days_to_expiry = int(7 + (1 - risk_factor) * 8)  # 7-15天范围，但不会总是7天（最少约8-9天）
+                            logger.debug(f"High volatility/compression: vol_factor={vol_factor:.3f}, bb_factor={bb_factor:.3f}, risk_factor={risk_factor:.3f}, days_to_expiry={days_to_expiry}")
+                        elif volatility < 0.3 or bb_percentile > 0.7:
+                            # 低波动或扩张：从20-30天范围中选择
+                            # 波动率越低或BB扩张越明显，选择越长的到期日
+                            opportunity_factor = min(1.0, max(0.0, (0.3 - volatility) / 0.3 if volatility < 0.3 else (bb_percentile - 0.7) / 0.3))
+                            days_to_expiry = int(20 + opportunity_factor * 10)  # 20-30天范围
+                            logger.debug(f"Low volatility/expansion: opportunity_factor={opportunity_factor:.3f}, days_to_expiry={days_to_expiry}")
+                        else:
+                            # 中等条件：从10-25天范围中选择
+                            # 基于volatility和bb_percentile的平衡值
+                            balance_factor = (volatility + bb_percentile) / 2  # 0-1范围
+                            days_to_expiry = int(10 + balance_factor * 15)  # 10-25天范围
+                            logger.debug(f"Moderate conditions: balance_factor={balance_factor:.3f}, days_to_expiry={days_to_expiry}")
                         
                         # 选择最优 OTM 策略
                         otm_config = DynamicOTMSelector.select_otm_strategy(
                             volatility=volatility,
                             momentum=momentum,
                             bb_percentile=bb_percentile,
-                            days_to_expiry=30
+                            days_to_expiry=days_to_expiry
                         )
                         
                         if current_strategy == 'long_call':
@@ -301,7 +359,7 @@ class OptionBacktest:
                         else:  # long_put
                             strike = self._round_strike(current_price * otm_config.put_multiplier)
                         
-                        logger.debug(f"Dynamic OTM: {otm_config.name}, Strike: ${strike:.2f}")
+                        logger.info(f"Dynamic OTM: {otm_config.name}, Strike: ${strike:.2f}, DTE: {days_to_expiry} days (vol={volatility:.2f}, bb_pct={bb_percentile:.2f})")
                         
                     except Exception as e:
                         # 回退到固定策略
@@ -310,10 +368,16 @@ class OptionBacktest:
                             strike = self._round_strike(current_price * 1.08)  # 8% OTM
                         else:  # long_put
                             strike = self._round_strike(current_price * 0.92)  # 8% OTM
+                        # 回退时从7-30天范围中选择，基于当前日期和价格确定值
+                        # 使用日期和价格的哈希值来确定一个确定性的值
+                        date_hash = hash(current_date) % 100
+                        price_hash = int(current_price * 100) % 100
+                        combined_hash = (date_hash + price_hash) % 24  # 0-23
+                        days_to_expiry = 7 + combined_hash  # 7-30天范围
                     
                     # 获取期权价格（真实或估算）
                     option_price = self._get_option_price(
-                        symbol, current_date, current_price, strike, current_strategy, 30
+                        symbol, current_date, current_price, strike, current_strategy, days_to_expiry
                     )
                     
                     # 计算合约数量
@@ -321,8 +385,8 @@ class OptionBacktest:
                     if shares == 0:
                         shares = 1
                     
-                    # 创建交易
-                    expiry_date = (date + timedelta(days=30)).strftime('%Y-%m-%d')
+                    # 创建交易（使用动态选择的到期日）
+                    expiry_date = (date + timedelta(days=days_to_expiry)).strftime('%Y-%m-%d')
                     
                     open_trade = Trade(
                         entry_date=current_date,
@@ -335,9 +399,12 @@ class OptionBacktest:
                         entry_underlying=current_price
                     )
                     
-                    logger.info(f"Entry: {current_date} | {current_strategy.upper()} | "
-                              f"Strike: ${strike:.2f} | Premium: ${option_price:.2f} | "
-                              f"Shares: {shares}")
+                    # 构建完整的期权标的符号
+                    option_type = "CALL" if current_strategy == "long_call" else "PUT"
+                    option_symbol = f"{symbol} {expiry_date} ${strike:.0f} {option_type}"
+                    
+                    logger.info(f"Entry: {current_date} | {option_symbol} | "
+                              f"Premium: ${option_price:.2f} | Shares: {shares}")
         
         # 关闭未平仓交易
         if open_trade:

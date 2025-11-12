@@ -1,0 +1,31 @@
+{
+  "name": "BBCO_MACR_RSIO_Plus1",
+  "signal_weights": {
+    "bb_compression": 0.407460850842783,
+    "ma_crossover": 0.3529632564212836,
+    "rsi_oversold": 0.024948883884311615,
+    "volume_surge": 0.21462700885162173
+  },
+  "params": {
+    "profit_target": 5.0,
+    "stop_loss": -0.5,
+    "max_holding_days": 30,
+    "position_size": 0.1
+  },
+  "backtest_performance": {
+    "total_return": 131.7384616737431,
+    "win_rate": 0.42857142857142855,
+    "sharpe_ratio": 2.596549915838149,
+    "max_drawdown": -0.33200062509714356,
+    "num_trades": 21,
+    "avg_win": 156756.45935299408,
+    "avg_loss": -7785.293119959657
+  },
+  "metadata": {
+    "symbol": "TSLA",
+    "best_return": 131.7384616737431,
+    "generated_at": "2025-11-11 20:40:08",
+    "backtest_period": "2024-01-01 to 2025-04-01",
+    "evaluation_period": "2025-04-01 to 2025-11-01"
+  }
+}

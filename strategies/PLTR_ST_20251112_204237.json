@@ -1,0 +1,31 @@
+{
+  "name": "RSIO_BBBR_WILL_Plus1",
+  "signal_weights": {
+    "rsi_overbought": 0.2819684185515964,
+    "bb_breakout": 0.10529902556142706,
+    "williams_overbought": 0.3858373320685257,
+    "williams_oversold": 0.22689522381845098
+  },
+  "params": {
+    "profit_target": 5.0,
+    "stop_loss": -0.5,
+    "max_holding_days": 30,
+    "position_size": 0.1
+  },
+  "backtest_performance": {
+    "total_return": 101.36801145845884,
+    "win_rate": 0.23333333333333334,
+    "sharpe_ratio": 1.3418359516354996,
+    "max_drawdown": -0.6396679037818169,
+    "num_trades": 30,
+    "avg_win": 218388.17344506498,
+    "avg_loss": -22392.917370907227
+  },
+  "metadata": {
+    "symbol": "PLTR",
+    "best_return": 101.36801145845884,
+    "generated_at": "2025-11-12 20:42:37",
+    "backtest_period": "2024-01-01 to 2025-04-01",
+    "evaluation_period": "2025-04-01 to 2025-11-01"
+  }
+}

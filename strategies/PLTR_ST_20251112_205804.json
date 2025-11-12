@@ -1,0 +1,31 @@
+{
+  "name": "MACD_MACD_BBBR_Plus1",
+  "signal_weights": {
+    "macd_crossover": 0.05976262376775674,
+    "macd_divergence": 0.2727915282350825,
+    "bb_breakout": 0.054646593803742725,
+    "bb_compression": 0.6127992541934181
+  },
+  "params": {
+    "profit_target": 5.0,
+    "stop_loss": -0.5,
+    "max_holding_days": 30,
+    "position_size": 0.1
+  },
+  "backtest_performance": {
+    "total_return": 49.224756462837234,
+    "win_rate": 0.2727272727272727,
+    "sharpe_ratio": 1.8954679797485838,
+    "max_drawdown": -0.4796228428968763,
+    "num_trades": 33,
+    "avg_win": 80621.05186673753,
+    "avg_loss": -9722.57925717773
+  },
+  "metadata": {
+    "symbol": "PLTR",
+    "best_return": 49.224756462837234,
+    "generated_at": "2025-11-12 20:58:04",
+    "backtest_period": "2024-01-01 to 2025-04-01",
+    "evaluation_period": "2025-04-01 to 2025-11-01"
+  }
+}

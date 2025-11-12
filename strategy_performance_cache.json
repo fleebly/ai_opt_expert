@@ -1,38 +1,147 @@
 {
-  "generated_at": "2025-11-10 17:15:59",
+  "generated_at": "2025-11-12 20:51:24",
   "strategy_performance": {
+    "META": {
+      "MACD_Volume_RSI_Plus1_META_ST_20251111_103354.json": {
+        "actual_return": -0.6560463858384268,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:35:48",
+        "strategy_name": "MACD_Volume_RSI_Plus1",
+        "filename": "META_ST_20251111_103354.json"
+      },
+      "MACR_WILL_META_ST_20251111_211238.json": {
+        "actual_return": -0.1866697483896457,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:36:04",
+        "strategy_name": "MACR_WILL",
+        "filename": "META_ST_20251111_211238.json"
+      },
+      "BBBR_RSIO_META_ST_20251112_202231.json": {
+        "actual_return": 0.0,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:36:06",
+        "strategy_name": "BBBR_RSIO",
+        "filename": "META_ST_20251112_202231.json"
+      }
+    },
     "BABA": {
-      "CCI_Momentum_MACD_Enhanced": {
-        "actual_return": 0.0,
-        "evaluation_period": "2025-10-01 to 2025-11-10",
-        "evaluated_at": "2025-11-10 17:13:21"
+      "MACD_Volume_Reversal_BABA_ST_20251107_185528.json": {
+        "actual_return": 0.006480895052240339,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:36:17",
+        "strategy_name": "MACD_Volume_Reversal",
+        "filename": "BABA_ST_20251107_185528.json"
       },
-      "MACD_RSI_BB": {
-        "actual_return": 1.2074965506059092,
-        "evaluation_period": "2025-05-01 to 2025-11-10",
-        "evaluated_at": "2025-11-10 17:13:53"
+      "CCI_Momentum_MACD_Enhanced_BABA_ST_20251107_203838.json": {
+        "actual_return": 0.1265495846896054,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:37:21",
+        "strategy_name": "CCI_Momentum_MACD_Enhanced",
+        "filename": "BABA_ST_20251107_203838.json"
       },
-      "MACD_Volume_Reversal": {
-        "actual_return": 0.0,
-        "evaluation_period": "2025-09-30 to 2025-11-10",
-        "evaluated_at": "2025-11-10 17:13:54"
+      "WILL_BBCO_VOLU_Plus1_BABA_ST_20251111_105501.json": {
+        "actual_return": 3.7263682175950272,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:38:28",
+        "strategy_name": "WILL_BBCO_VOLU_Plus1",
+        "filename": "BABA_ST_20251111_105501.json"
       },
-      "Enhanced_MACD_RSI_BB": {
-        "actual_return": 1.950691896368521,
-        "evaluation_period": "2025-04-01 to 2025-11-10",
-        "evaluated_at": "2025-11-10 17:14:13"
+      "BB_Specialist_BABA_ST_20251111_211257.json": {
+        "actual_return": 5.77917437104211,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:39:33",
+        "strategy_name": "BB_Specialist",
+        "filename": "BABA_ST_20251111_211257.json"
       },
-      "CCI_Volume_LowVol_Fusion": {
-        "actual_return": 2.1748682296096025,
-        "evaluation_period": "2025-05-01 to 2025-11-10",
-        "evaluated_at": "2025-11-10 17:14:59"
+      "CCI_Volume_LowVol_Fusion_BABA_ST_20251110_154656.json": {
+        "actual_return": 0.4859115166745602,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:40:54",
+        "strategy_name": "CCI_Volume_LowVol_Fusion",
+        "filename": "BABA_ST_20251110_154656.json"
+      },
+      "MACD_RSI_BB_BABA_ST_20251111_110250.json": {
+        "actual_return": 5.77917437104211,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:42:09",
+        "strategy_name": "MACD_RSI_BB",
+        "filename": "BABA_ST_20251111_110250.json"
+      },
+      "MACD_RSI_BB_BABA_ST_20251110_194553.json": {
+        "actual_return": 5.77917437104211,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:43:18",
+        "strategy_name": "MACD_RSI_BB",
+        "filename": "BABA_ST_20251110_194553.json"
+      },
+      "MACD_RSI_BB_BABA_ST_20251110_151256.json": {
+        "actual_return": 5.77917437104211,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:44:30",
+        "strategy_name": "MACD_RSI_BB",
+        "filename": "BABA_ST_20251110_151256.json"
+      },
+      "Enhanced_MACD_RSI_BB_BABA_ST.json": {
+        "actual_return": 0.6775611320145825,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:44:47",
+        "strategy_name": "Enhanced_MACD_RSI_BB",
+        "filename": "BABA_ST.json"
       }
     },
     "NVDA": {
-      "CCI_RSI_Volatility_Momentum": {
-        "actual_return": 0.17716158951023972,
-        "evaluation_period": "2025-04-01 to 2025-11-10",
-        "evaluated_at": "2025-11-10 17:15:59"
+      "LowVol_BB_Breakout_Momentum_Reversal_NVDA_ST_20251110_175318.json": {
+        "actual_return": 0.29042592594171035,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:45:27",
+        "strategy_name": "LowVol_BB_Breakout_Momentum_Reversal",
+        "filename": "NVDA_ST_20251110_175318.json"
+      },
+      "MACR_CCIE_WILL_NVDA_ST_20251111_210329.json": {
+        "actual_return": -0.7318438564866482,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:47:15",
+        "strategy_name": "MACR_CCIE_WILL",
+        "filename": "NVDA_ST_20251111_210329.json"
+      },
+      "CCI_RSI_Volatility_Momentum_NVDA_ST.json": {
+        "actual_return": -0.5482215917522282,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:48:13",
+        "strategy_name": "CCI_RSI_Volatility_Momentum",
+        "filename": "NVDA_ST.json"
+      }
+    },
+    "PLTR": {
+      "BBCOMP_VOLU_LOWV_MA50_Plus6_PLTR_ST_20251111_192632.json": {
+        "actual_return": 0.7677347382739171,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:48:54",
+        "strategy_name": "BBCOMP_VOLU_LOWV_MA50_Plus6",
+        "filename": "PLTR_ST_20251111_192632.json"
+      },
+      "CCIE_WILL_RSIO_Plus2_PLTR_ST_20251112_063341.json": {
+        "actual_return": 1.007547718128299,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:50:07",
+        "strategy_name": "CCIE_WILL_RSIO_Plus2",
+        "filename": "PLTR_ST_20251112_063341.json"
+      },
+      "MACD_RSI_BB_PLTR_ST_20251110_200417.json": {
+        "actual_return": 0.6176038812159824,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:50:55",
+        "strategy_name": "MACD_RSI_BB",
+        "filename": "PLTR_ST_20251110_200417.json"
+      }
+    },
+    "TSLA": {
+      "BBCO_MACR_RSIO_Plus1_TSLA_ST_20251111_204008.json": {
+        "actual_return": 1.1846667726449784,
+        "evaluation_period": "2025-04-01 to 2025-11-11",
+        "evaluated_at": "2025-11-12 20:51:24",
+        "strategy_name": "BBCO_MACR_RSIO_Plus1",
+        "filename": "TSLA_ST_20251111_204008.json"
       }
     }
   }

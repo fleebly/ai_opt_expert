@@ -1,0 +1,29 @@
+{
+  "name": "BBBR_RSIO",
+  "signal_weights": {
+    "bb_breakout": 0.6451819099374759,
+    "rsi_oversold": 0.3548180900625241
+  },
+  "params": {
+    "profit_target": 5.0,
+    "stop_loss": -0.5,
+    "max_holding_days": 30,
+    "position_size": 0.1
+  },
+  "backtest_performance": {
+    "total_return": 0.0,
+    "win_rate": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "num_trades": 0,
+    "avg_win": 0.0,
+    "avg_loss": 0.0
+  },
+  "metadata": {
+    "symbol": "META",
+    "best_return": 0.0,
+    "generated_at": "2025-11-12 20:22:31",
+    "backtest_period": "2024-01-01 to 2025-04-01",
+    "evaluation_period": "2025-04-01 to 2025-11-01"
+  }
+}

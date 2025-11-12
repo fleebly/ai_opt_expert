@@ -2327,7 +2327,12 @@ elif display_page == "📈 Real-time Monitor":
             key="monitor_start_date_picker",
             help="Select the start date for calculating returns. Only trades after this date will be included."
         )
-        st.session_state.monitor_start_date_selected = selected_start_date
+        # Check if date changed and trigger rerun
+        if selected_start_date != st.session_state.monitor_start_date_selected:
+            st.session_state.monitor_start_date_selected = selected_start_date
+            st.rerun()
+        else:
+            st.session_state.monitor_start_date_selected = selected_start_date
         monitor_start_date = selected_start_date.strftime('%Y-%m-%d')
     
     with col2:
@@ -2462,33 +2467,11 @@ elif display_page == "📈 Real-time Monitor":
                 'equity_curve': equity_series
             }
         
-        # Calculate final_value from equity_curve if available, otherwise from trades
-        equity_curve_original = result.get('equity_curve', [])
-        if equity_curve_original is not None and (isinstance(equity_curve_original, list) and len(equity_curve_original) > 0 or isinstance(equity_curve_original, pd.Series) and len(equity_curve_original) > 0):
-            # Convert to Series if needed
-            if isinstance(equity_curve_original, pd.Series):
-                temp_series = equity_curve_original.copy()
-            elif isinstance(equity_curve_original, list):
-                dates = [item['date'] for item in equity_curve_original]
-                values = [item['value'] for item in equity_curve_original]
-                temp_series = pd.Series(values, index=pd.to_datetime(dates))
-            else:
-                temp_series = None
-            
-            if temp_series is not None and len(temp_series) > 0:
-                # Use the last value from equity_curve as final_value
-                final_value = float(temp_series.iloc[-1])
-                total_return = (final_value - initial_capital) / initial_capital
-            else:
-                # Fallback to trades calculation
-                total_pnl = sum(t.get('pnl', 0) or 0 for t in filtered_trades)
-                final_value = initial_capital + total_pnl
-                total_return = (final_value - initial_capital) / initial_capital
-        else:
-            # No equity_curve, calculate from trades
-            total_pnl = sum(t.get('pnl', 0) or 0 for t in filtered_trades)
-            final_value = initial_capital + total_pnl
-            total_return = (final_value - initial_capital) / initial_capital
+        # Always calculate final_value from filtered trades to ensure consistency
+        # This ensures the final_value matches the filtered trades shown in the table
+        total_pnl = sum(t.get('pnl', 0) or 0 for t in filtered_trades)
+        final_value = initial_capital + total_pnl
+        total_return = (final_value - initial_capital) / initial_capital
         
         # Calculate win rate
         closed_trades = [t for t in filtered_trades if t.get('status') == 'closed' and t.get('pnl') is not None]
@@ -2498,97 +2481,48 @@ elif display_page == "📈 Real-time Monitor":
         else:
             win_rate = 0.0
         
-        # Filter and rebuild equity curve from start_date
-        equity_curve_original = result.get('equity_curve')
+        # Rebuild equity curve from filtered trades to ensure consistency with trade table
+        # This ensures the equity curve accurately reflects the trades shown in the table
         start_date_dt = pd.to_datetime(start_date)
         
-        if equity_curve_original is not None:
-            # Convert to Series if needed
-            if isinstance(equity_curve_original, pd.Series):
-                equity_series = equity_curve_original.copy()
-            elif isinstance(equity_curve_original, list):
-                # Convert list of {date, value} dicts to Series
-                dates = [item['date'] for item in equity_curve_original]
-                values = [item['value'] for item in equity_curve_original]
-                equity_series = pd.Series(values, index=pd.to_datetime(dates))
-            else:
-                equity_series = pd.Series([initial_capital], index=[start_date_dt])
+        # Always rebuild from trades if available to ensure consistency with trade table
+        equity_series = pd.Series([initial_capital], index=[start_date_dt])
+        
+        if filtered_trades:
+            # Sort trades by entry date and rebuild equity curve from trades
+            sorted_trades = sorted(filtered_trades, key=lambda t: pd.to_datetime(t.get('entry_date', start_date)))
+            current_value = initial_capital
             
-            # Ensure index is DatetimeIndex
-            if not isinstance(equity_series.index, pd.DatetimeIndex):
-                equity_series.index = pd.to_datetime(equity_series.index)
-            
-            # Filter equity curve to ONLY include data from start_date onwards
-            equity_series = equity_series[equity_series.index >= start_date_dt]
-            
-            # If no data at or after start_date, create a new series starting from start_date
-            if len(equity_series) == 0:
-                # No data after start_date, create series with just initial capital
-                equity_series = pd.Series([initial_capital], index=[start_date_dt])
-            else:
-                # We have data after start_date
-                # Get the value just before start_date to calculate the adjustment
-                # Find the last value before start_date from original data
-                if isinstance(equity_curve_original, pd.Series):
-                    before_start_series = equity_curve_original.copy()
-                elif isinstance(equity_curve_original, list):
-                    dates = [item['date'] for item in equity_curve_original]
-                    values = [item['value'] for item in equity_curve_original]
-                    before_start_series = pd.Series(values, index=pd.to_datetime(dates))
-                else:
-                    before_start_series = pd.Series([initial_capital], index=[start_date_dt])
+            for trade in sorted_trades:
+                entry_date = pd.to_datetime(trade.get('entry_date', start_date))
+                exit_date = trade.get('exit_date')
+                pnl = trade.get('pnl', 0) or 0
                 
-                if not isinstance(before_start_series.index, pd.DatetimeIndex):
-                    before_start_series.index = pd.to_datetime(before_start_series.index)
+                # Add entry point if on or after start_date
+                if entry_date >= start_date_dt:
+                    equity_series[entry_date] = current_value
                 
-                # Get value just before start_date
-                before_start_data = before_start_series[before_start_series.index < start_date_dt]
-                if len(before_start_data) > 0:
-                    value_before_start = before_start_data.iloc[-1]
-                    # Adjust all values by the difference to start from initial_capital
-                    adjustment = initial_capital - value_before_start
-                    equity_series = equity_series + adjustment
-                else:
-                    # No data before start_date, use initial_capital as starting point
-                    # Adjust first value to initial_capital
-                    first_value = equity_series.iloc[0]
-                    adjustment = initial_capital - first_value
-                    equity_series = equity_series + adjustment
-                
-                # Ensure we have a point at start_date
-                if equity_series.index[0] > start_date_dt:
-                    # Insert initial capital at start_date
-                    equity_series = pd.concat([
-                        pd.Series([initial_capital], index=[start_date_dt]),
-                        equity_series
-                    ]).sort_index()
-                else:
-                    # Update the first value to initial_capital
-                    equity_series.iloc[0] = initial_capital
-        else:
-            # No original equity curve, create new one from filtered trades
-            equity_series = pd.Series([initial_capital], index=[start_date_dt])
-            
-            # Add points for filtered trades
-            if filtered_trades:
-                sorted_trades = sorted(filtered_trades, key=lambda t: pd.to_datetime(t.get('entry_date', start_date)))
-                current_value = initial_capital
-                
-                for trade in sorted_trades:
-                    entry_date = pd.to_datetime(trade.get('entry_date', start_date))
-                    exit_date = trade.get('exit_date')
-                    pnl = trade.get('pnl', 0) or 0
-                    
-                    if exit_date:
-                        exit_date = pd.to_datetime(exit_date)
+                # Add exit point if on or after start_date
+                if exit_date:
+                    exit_date = pd.to_datetime(exit_date)
+                    if exit_date >= start_date_dt:
                         current_value += pnl
-                        # Add both entry and exit points
-                        if entry_date >= start_date_dt:
-                            equity_series[entry_date] = current_value - pnl
-                        if exit_date >= start_date_dt:
-                            equity_series[exit_date] = current_value
-                
-                equity_series = equity_series.sort_index()
+                        equity_series[exit_date] = current_value
+                else:
+                    current_value += pnl
+            
+            equity_series = equity_series.sort_index()
+            
+            # Fill gaps in equity curve by forward-filling values
+            if len(equity_series) > 0:
+                last_date = equity_series.index[-1]
+                daily_index = pd.date_range(start=start_date_dt, end=last_date, freq='D')
+                equity_series = equity_series.reindex(daily_index, method='ffill')
+                # Remove weekends (keep only weekdays)
+                equity_series = equity_series[equity_series.index.weekday < 5]
+        else:
+            # No trades, keep single point at initial_capital
+            pass
         
         return {
             **result,

@@ -1,0 +1,32 @@
+{
+  "name": "CCIE_WILL_RSIO_Plus2",
+  "signal_weights": {
+    "cci_extreme": 0.505444819863583,
+    "williams_overbought": 0.02200710263312163,
+    "rsi_oversold": 0.08925933155750718,
+    "momentum_reversal": 0.3558503846087331,
+    "bb_compression": 0.027438361337055035
+  },
+  "params": {
+    "profit_target": 5.0,
+    "stop_loss": -0.5,
+    "max_holding_days": 30,
+    "position_size": 0.1
+  },
+  "backtest_performance": {
+    "total_return": 66.76890339381166,
+    "win_rate": 0.38461538461538464,
+    "sharpe_ratio": 2.2618890800593747,
+    "max_drawdown": -0.4549821776694062,
+    "num_trades": 26,
+    "avg_win": 86516.62730958979,
+    "avg_loss": -12342.327447361346
+  },
+  "metadata": {
+    "symbol": "PLTR",
+    "best_return": 66.76890339381166,
+    "generated_at": "2025-11-12 06:33:41",
+    "backtest_period": "2024-01-01 to 2025-04-01",
+    "evaluation_period": "2025-04-01 to 2025-11-01"
+  }
+}

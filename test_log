@@ -1,0 +1,556 @@
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: BABA from 2025-10-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-10-01 to 2025-11-11 (30 days)
+INFO:backtest_engine:   Requested: 2025-10-01 to 2025-11-11
+INFO:backtest_engine:ℹ️  No trades executed, but equity curve has 30 data points
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: BABA from 2025-05-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-05-01 to 2025-11-11 (135 days)
+INFO:backtest_engine:   Requested: 2025-05-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-09-02 | LONG_CALL | Strike: $150.00 | Premium: $0.32 | Shares: 31
+INFO:backtest_engine:Exit Stop Loss (-50.8%): 2025-09-04 | PnL: $-602.77 (-60.6%)
+INFO:backtest_engine:Entry: 2025-09-04 | LONG_CALL | Strike: $140.00 | Premium: $0.32 | Shares: 29
+INFO:backtest_engine:Exit Profit Target (2127.4%): 2025-09-09 | PnL: $19818.12 (2109.6%)
+INFO:backtest_engine:Entry: 2025-09-09 | LONG_CALL | Strike: $150.00 | Premium: $0.47 | Shares: 62
+INFO:backtest_engine:Exit Profit Target (1136.0%): 2025-09-11 | PnL: $32453.61 (1122.0%)
+INFO:backtest_engine:Entry: 2025-09-11 | LONG_CALL | Strike: $160.00 | Premium: $0.47 | Shares: 131
+INFO:backtest_engine:Exit Stop Loss (-52.6%): 2025-09-15 | PnL: $-4208.75 (-68.4%)
+INFO:backtest_engine:Entry: 2025-09-15 | LONG_CALL | Strike: $170.00 | Premium: $0.38 | Shares: 151
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-09-22 | PnL: $-5721.12 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-22 | LONG_CALL | Strike: $170.00 | Premium: $0.48 | Shares: 107
+INFO:backtest_engine:Exit Profit Target (1310.7%): 2025-09-24 | PnL: $66890.52 (1295.5%)
+INFO:backtest_engine:Entry: 2025-09-24 | LONG_CALL | Strike: $190.00 | Premium: $0.42 | Shares: 282
+INFO:backtest_engine:Exit Stop Loss (-67.7%): 2025-09-29 | PnL: $-9942.74 (-83.8%)
+INFO:backtest_engine:Entry: 2025-09-29 | LONG_CALL | Strike: $190.00 | Premium: $0.48 | Shares: 228
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-10-06 | PnL: $-10842.33 (-100.0%)
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: BABA from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-07-24 | LONG_CALL | Strike: $130.00 | Premium: $0.29 | Shares: 33
+INFO:backtest_engine:Exit Stop Loss (-54.8%): 2025-07-28 | PnL: $-678.82 (-69.9%)
+INFO:backtest_engine:Entry: 2025-07-28 | LONG_CALL | Strike: $130.00 | Premium: $0.31 | Shares: 30
+INFO:backtest_engine:Exit Stop Loss (-67.4%): 2025-08-01 | PnL: $-727.93 (-78.3%)
+INFO:backtest_engine:Entry: 2025-08-01 | LONG_CALL | Strike: $120.00 | Premium: $1.22 | Shares: 7
+INFO:backtest_engine:Exit Stop Loss (-82.7%): 2025-08-04 | PnL: $-743.08 (-87.0%)
+INFO:backtest_engine:Entry: 2025-08-04 | LONG_CALL | Strike: $120.00 | Premium: $0.37 | Shares: 21
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-08-11 | PnL: $-776.47 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-02 | LONG_CALL | Strike: $150.00 | Premium: $0.32 | Shares: 22
+INFO:backtest_engine:Exit Stop Loss (-50.8%): 2025-09-04 | PnL: $-427.77 (-60.6%)
+INFO:backtest_engine:Entry: 2025-09-04 | LONG_CALL | Strike: $140.00 | Premium: $0.32 | Shares: 20
+INFO:backtest_engine:Exit Profit Target (2127.4%): 2025-09-09 | PnL: $13667.67 (2109.6%)
+INFO:backtest_engine:Entry: 2025-09-09 | LONG_CALL | Strike: $150.00 | Premium: $0.47 | Shares: 43
+INFO:backtest_engine:Exit Profit Target (1136.0%): 2025-09-11 | PnL: $22508.15 (1122.0%)
+INFO:backtest_engine:Entry: 2025-09-11 | LONG_CALL | Strike: $160.00 | Premium: $0.47 | Shares: 91
+INFO:backtest_engine:Exit Stop Loss (-52.6%): 2025-09-15 | PnL: $-2923.64 (-68.4%)
+INFO:backtest_engine:Entry: 2025-09-15 | LONG_CALL | Strike: $170.00 | Premium: $0.38 | Shares: 105
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-09-22 | PnL: $-3978.27 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-22 | LONG_CALL | Strike: $170.00 | Premium: $0.48 | Shares: 74
+INFO:backtest_engine:Exit Profit Target (1310.7%): 2025-09-24 | PnL: $46260.73 (1295.5%)
+INFO:backtest_engine:Entry: 2025-09-24 | LONG_CALL | Strike: $190.00 | Premium: $0.42 | Shares: 195
+INFO:backtest_engine:Exit Stop Loss (-67.7%): 2025-09-29 | PnL: $-6875.30 (-83.8%)
+INFO:backtest_engine:Entry: 2025-09-29 | LONG_CALL | Strike: $190.00 | Premium: $0.48 | Shares: 158
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-10-06 | PnL: $-7513.54 (-100.0%)
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: BABA from 2025-09-30 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-09-30 to 2025-11-11 (31 days)
+INFO:backtest_engine:   Requested: 2025-09-30 to 2025-11-11
+INFO:backtest_engine:ℹ️  No trades executed, but equity curve has 31 data points
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: BABA from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-06-20 | LONG_PUT | Strike: $110.00 | Premium: $0.69 | Shares: 14
+INFO:backtest_engine:Exit Stop Loss (-71.4%): 2025-06-23 | PnL: $-758.84 (-78.6%)
+INFO:backtest_engine:Entry: 2025-07-02 | LONG_PUT | Strike: $110.00 | Premium: $0.38 | Shares: 24
+INFO:backtest_engine:Exit Profit Target (917.7%): 2025-07-07 | PnL: $8171.38 (907.3%)
+INFO:backtest_engine:Entry: 2025-07-07 | LONG_PUT | Strike: $100.00 | Premium: $0.28 | Shares: 62
+INFO:backtest_engine:Exit Stop Loss (-57.8%): 2025-07-11 | PnL: $-1233.98 (-71.9%)
+INFO:backtest_engine:Entry: 2025-07-30 | LONG_CALL | Strike: $120.00 | Premium: $0.37 | Shares: 44
+INFO:backtest_engine:Exit Stop Loss (-71.2%): 2025-08-04 | PnL: $-1384.35 (-85.6%)
+INFO:backtest_engine:Entry: 2025-09-02 | LONG_CALL | Strike: $150.00 | Premium: $0.32 | Shares: 46
+INFO:backtest_engine:Exit Stop Loss (-50.8%): 2025-09-04 | PnL: $-894.43 (-60.6%)
+INFO:backtest_engine:Entry: 2025-09-05 | LONG_CALL | Strike: $140.00 | Premium: $1.26 | Shares: 11
+INFO:backtest_engine:Exit Profit Target (1129.4%): 2025-09-11 | PnL: $15598.00 (1125.4%)
+INFO:backtest_engine:Entry: 2025-09-11 | LONG_CALL | Strike: $160.00 | Premium: $0.47 | Shares: 62
+INFO:backtest_engine:Exit Stop Loss (-52.6%): 2025-09-15 | PnL: $-1991.93 (-68.4%)
+INFO:backtest_engine:Entry: 2025-09-15 | LONG_CALL | Strike: $170.00 | Premium: $0.38 | Shares: 72
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-09-22 | PnL: $-2727.95 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-22 | LONG_CALL | Strike: $170.00 | Premium: $0.48 | Shares: 51
+INFO:backtest_engine:Exit Profit Target (1310.7%): 2025-09-24 | PnL: $31882.40 (1295.5%)
+INFO:backtest_engine:Entry: 2025-09-24 | LONG_CALL | Strike: $190.00 | Premium: $0.42 | Shares: 134
+INFO:backtest_engine:Exit Stop Loss (-67.7%): 2025-09-29 | PnL: $-4724.56 (-83.8%)
+INFO:backtest_engine:Entry: 2025-10-10 | LONG_PUT | Strike: $150.00 | Premium: $2.02 | Shares: 25
+INFO:backtest_engine:Exit Stop Loss (-90.0%): 2025-10-13 | PnL: $-4672.06 (-92.5%)
+INFO:backtest_engine:Entry: 2025-11-11 | LONG_PUT | Strike: $150.00 | Premium: $0.40 | Shares: 117
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: BABA from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-08-29 | LONG_CALL | Strike: $140.00 | Premium: $1.60 | Shares: 6
+INFO:backtest_engine:Exit Stop Loss (-87.7%): 2025-09-02 | PnL: $-881.11 (-91.8%)
+INFO:backtest_engine:Entry: 2025-09-02 | LONG_CALL | Strike: $150.00 | Premium: $0.32 | Shares: 28
+INFO:backtest_engine:Exit Stop Loss (-50.8%): 2025-09-04 | PnL: $-544.44 (-60.6%)
+INFO:backtest_engine:Entry: 2025-09-09 | LONG_CALL | Strike: $150.00 | Premium: $0.47 | Shares: 18
+INFO:backtest_engine:Exit Profit Target (1136.0%): 2025-09-11 | PnL: $9422.01 (1122.0%)
+INFO:backtest_engine:Entry: 2025-09-11 | LONG_CALL | Strike: $160.00 | Premium: $0.47 | Shares: 38
+INFO:backtest_engine:Exit Stop Loss (-52.6%): 2025-09-15 | PnL: $-1220.86 (-68.4%)
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: BABA from 2025-05-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-05-01 to 2025-11-11 (135 days)
+INFO:backtest_engine:   Requested: 2025-05-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-07-18 | LONG_CALL | Strike: $130.00 | Premium: $0.37 | Shares: 27
+INFO:backtest_engine:Exit Stop Loss (-56.6%): 2025-07-21 | PnL: $-673.96 (-67.5%)
+INFO:backtest_engine:Entry: 2025-08-13 | LONG_CALL | Strike: $130.00 | Premium: $0.39 | Shares: 23
+INFO:backtest_engine:Exit Stop Loss (-78.3%): 2025-08-18 | PnL: $-787.35 (-87.3%)
+INFO:backtest_engine:Entry: 2025-08-25 | LONG_CALL | Strike: $130.00 | Premium: $0.35 | Shares: 24
+INFO:backtest_engine:Exit Stop Loss (-55.4%): 2025-08-28 | PnL: $-553.97 (-66.6%)
+INFO:backtest_engine:Entry: 2025-08-29 | LONG_CALL | Strike: $140.00 | Premium: $1.60 | Shares: 4
+INFO:backtest_engine:Exit Stop Loss (-87.7%): 2025-09-02 | PnL: $-587.41 (-91.8%)
+INFO:backtest_engine:Entry: 2025-09-02 | LONG_CALL | Strike: $150.00 | Premium: $0.32 | Shares: 23
+INFO:backtest_engine:Exit Stop Loss (-50.8%): 2025-09-04 | PnL: $-447.21 (-60.6%)
+INFO:backtest_engine:Entry: 2025-09-08 | LONG_CALL | Strike: $150.00 | Premium: $0.36 | Shares: 19
+INFO:backtest_engine:Exit Profit Target (1475.4%): 2025-09-11 | PnL: $10020.31 (1457.3%)
+INFO:backtest_engine:Entry: 2025-09-11 | LONG_CALL | Strike: $160.00 | Premium: $0.47 | Shares: 36
+INFO:backtest_engine:Exit Stop Loss (-52.6%): 2025-09-15 | PnL: $-1156.60 (-68.4%)
+INFO:backtest_engine:Entry: 2025-09-15 | LONG_CALL | Strike: $170.00 | Premium: $0.38 | Shares: 41
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-09-22 | PnL: $-1553.42 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-24 | LONG_CALL | Strike: $190.00 | Premium: $0.42 | Shares: 33
+INFO:backtest_engine:Exit Stop Loss (-67.7%): 2025-09-29 | PnL: $-1163.51 (-83.8%)
+INFO:backtest_engine:Entry: 2025-10-02 | LONG_CALL | Strike: $200.00 | Premium: $0.50 | Shares: 26
+INFO:backtest_engine:Exit Stop Loss (-60.1%): 2025-10-06 | PnL: $-954.24 (-73.4%)
+INFO:backtest_engine:Entry: 2025-11-11 | LONG_PUT | Strike: $150.00 | Premium: $0.40 | Shares: 30
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: BABA from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-07-24 | LONG_CALL | Strike: $130.00 | Premium: $0.29 | Shares: 33
+INFO:backtest_engine:Exit Stop Loss (-54.8%): 2025-07-28 | PnL: $-678.82 (-69.9%)
+INFO:backtest_engine:Entry: 2025-07-28 | LONG_CALL | Strike: $130.00 | Premium: $0.31 | Shares: 30
+INFO:backtest_engine:Exit Stop Loss (-67.4%): 2025-08-01 | PnL: $-727.93 (-78.3%)
+INFO:backtest_engine:Entry: 2025-08-01 | LONG_CALL | Strike: $120.00 | Premium: $1.22 | Shares: 7
+INFO:backtest_engine:Exit Stop Loss (-82.7%): 2025-08-04 | PnL: $-743.08 (-87.0%)
+INFO:backtest_engine:Entry: 2025-08-04 | LONG_CALL | Strike: $120.00 | Premium: $0.37 | Shares: 21
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-08-11 | PnL: $-776.47 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-02 | LONG_CALL | Strike: $150.00 | Premium: $0.32 | Shares: 22
+INFO:backtest_engine:Exit Stop Loss (-50.8%): 2025-09-04 | PnL: $-427.77 (-60.6%)
+INFO:backtest_engine:Entry: 2025-09-04 | LONG_CALL | Strike: $140.00 | Premium: $0.32 | Shares: 20
+INFO:backtest_engine:Exit Profit Target (2127.4%): 2025-09-09 | PnL: $13667.67 (2109.6%)
+INFO:backtest_engine:Entry: 2025-09-09 | LONG_CALL | Strike: $150.00 | Premium: $0.47 | Shares: 43
+INFO:backtest_engine:Exit Profit Target (1136.0%): 2025-09-11 | PnL: $22508.15 (1122.0%)
+INFO:backtest_engine:Entry: 2025-09-11 | LONG_CALL | Strike: $160.00 | Premium: $0.47 | Shares: 91
+INFO:backtest_engine:Exit Stop Loss (-52.6%): 2025-09-15 | PnL: $-2923.64 (-68.4%)
+INFO:backtest_engine:Entry: 2025-09-15 | LONG_CALL | Strike: $170.00 | Premium: $0.38 | Shares: 105
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-09-22 | PnL: $-3978.27 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-22 | LONG_CALL | Strike: $170.00 | Premium: $0.48 | Shares: 74
+INFO:backtest_engine:Exit Profit Target (1310.7%): 2025-09-24 | PnL: $46260.73 (1295.5%)
+INFO:backtest_engine:Entry: 2025-09-24 | LONG_CALL | Strike: $190.00 | Premium: $0.42 | Shares: 195
+INFO:backtest_engine:Exit Stop Loss (-67.7%): 2025-09-29 | PnL: $-6875.30 (-83.8%)
+INFO:backtest_engine:Entry: 2025-09-29 | LONG_CALL | Strike: $190.00 | Premium: $0.48 | Shares: 158
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-10-06 | PnL: $-7513.54 (-100.0%)
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: BABA from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-07-24 | LONG_CALL | Strike: $130.00 | Premium: $0.29 | Shares: 33
+INFO:backtest_engine:Exit Stop Loss (-54.8%): 2025-07-28 | PnL: $-678.82 (-69.9%)
+INFO:backtest_engine:Entry: 2025-07-28 | LONG_CALL | Strike: $130.00 | Premium: $0.31 | Shares: 30
+INFO:backtest_engine:Exit Stop Loss (-67.4%): 2025-08-01 | PnL: $-727.93 (-78.3%)
+INFO:backtest_engine:Entry: 2025-08-01 | LONG_CALL | Strike: $120.00 | Premium: $1.22 | Shares: 7
+INFO:backtest_engine:Exit Stop Loss (-82.7%): 2025-08-04 | PnL: $-743.08 (-87.0%)
+INFO:backtest_engine:Entry: 2025-08-04 | LONG_CALL | Strike: $120.00 | Premium: $0.37 | Shares: 21
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-08-11 | PnL: $-776.47 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-02 | LONG_CALL | Strike: $150.00 | Premium: $0.32 | Shares: 22
+INFO:backtest_engine:Exit Stop Loss (-50.8%): 2025-09-04 | PnL: $-427.77 (-60.6%)
+INFO:backtest_engine:Entry: 2025-09-04 | LONG_CALL | Strike: $140.00 | Premium: $0.32 | Shares: 20
+INFO:backtest_engine:Exit Profit Target (2127.4%): 2025-09-09 | PnL: $13667.67 (2109.6%)
+INFO:backtest_engine:Entry: 2025-09-09 | LONG_CALL | Strike: $150.00 | Premium: $0.47 | Shares: 43
+INFO:backtest_engine:Exit Profit Target (1136.0%): 2025-09-11 | PnL: $22508.15 (1122.0%)
+INFO:backtest_engine:Entry: 2025-09-11 | LONG_CALL | Strike: $160.00 | Premium: $0.47 | Shares: 91
+INFO:backtest_engine:Exit Stop Loss (-52.6%): 2025-09-15 | PnL: $-2923.64 (-68.4%)
+INFO:backtest_engine:Entry: 2025-09-15 | LONG_CALL | Strike: $170.00 | Premium: $0.38 | Shares: 105
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-09-22 | PnL: $-3978.27 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-22 | LONG_CALL | Strike: $170.00 | Premium: $0.48 | Shares: 74
+INFO:backtest_engine:Exit Profit Target (1310.7%): 2025-09-24 | PnL: $46260.73 (1295.5%)
+INFO:backtest_engine:Entry: 2025-09-24 | LONG_CALL | Strike: $190.00 | Premium: $0.42 | Shares: 195
+INFO:backtest_engine:Exit Stop Loss (-67.7%): 2025-09-29 | PnL: $-6875.30 (-83.8%)
+INFO:backtest_engine:Entry: 2025-09-29 | LONG_CALL | Strike: $190.00 | Premium: $0.48 | Shares: 158
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-10-06 | PnL: $-7513.54 (-100.0%)
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: NVDA from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-06-12 | LONG_CALL | Strike: $150.00 | Premium: $0.43 | Shares: 23
+INFO:backtest_engine:Exit Stop Loss (-57.7%): 2025-06-16 | PnL: $-705.40 (-71.8%)
+INFO:backtest_engine:Entry: 2025-06-16 | LONG_CALL | Strike: $150.00 | Premium: $0.42 | Shares: 22
+INFO:backtest_engine:Exit Stop Loss (-58.7%): 2025-06-20 | PnL: $-671.78 (-72.4%)
+INFO:backtest_engine:Entry: 2025-06-24 | LONG_CALL | Strike: $160.00 | Premium: $0.34 | Shares: 25
+INFO:backtest_engine:Exit Stop Loss (-78.4%): 2025-06-30 | PnL: $-859.65 (-100.0%)
+INFO:backtest_engine:Entry: 2025-06-30 | LONG_CALL | Strike: $170.00 | Premium: $0.38 | Shares: 20
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-07-07 | PnL: $-756.24 (-100.0%)
+INFO:backtest_engine:Entry: 2025-07-07 | LONG_CALL | Strike: $170.00 | Premium: $0.38 | Shares: 18
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-07-14 | PnL: $-687.51 (-100.0%)
+INFO:backtest_engine:Entry: 2025-07-18 | LONG_CALL | Strike: $180.00 | Premium: $0.51 | Shares: 12
+INFO:backtest_engine:Exit Stop Loss (-66.7%): 2025-07-22 | PnL: $-476.06 (-77.8%)
+INFO:backtest_engine:Entry: 2025-09-02 | LONG_CALL | Strike: $180.00 | Premium: $0.52 | Shares: 11
+INFO:backtest_engine:Exit Stop Loss (-77.2%): 2025-09-08 | PnL: $-508.25 (-88.6%)
+INFO:backtest_engine:Entry: 2025-10-02 | LONG_CALL | Strike: $200.00 | Premium: $0.49 | Shares: 10
+INFO:backtest_engine:Exit Stop Loss (-61.7%): 2025-10-06 | PnL: $-367.01 (-74.5%)
+INFO:backtest_engine:Entry: 2025-10-28 | LONG_CALL | Strike: $210.00 | Premium: $0.56 | Shares: 8
+INFO:backtest_engine:Exit Stop Loss (-83.0%): 2025-11-03 | PnL: $-450.33 (-100.0%)
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: NVDA from 2025-05-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-05-01 to 2025-11-11 (135 days)
+INFO:backtest_engine:   Requested: 2025-05-01 to 2025-11-11
+INFO:backtest_engine:ℹ️  No trades executed, but equity curve has 135 data points
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: NVDA from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-06-12 | LONG_PUT | Strike: $140.00 | Premium: $0.43 | Shares: 23
+INFO:backtest_engine:Exit Stop Loss (-56.8%): 2025-06-16 | PnL: $-699.40 (-71.2%)
+INFO:backtest_engine:Entry: 2025-06-16 | LONG_PUT | Strike: $140.00 | Premium: $0.43 | Shares: 21
+INFO:backtest_engine:Exit Stop Loss (-56.2%): 2025-06-20 | PnL: $-640.11 (-70.8%)
+INFO:backtest_engine:Entry: 2025-06-24 | LONG_PUT | Strike: $140.00 | Premium: $0.40 | Shares: 21
+INFO:backtest_engine:Exit Stop Loss (-54.6%): 2025-06-27 | PnL: $-549.17 (-66.0%)
+INFO:backtest_engine:Entry: 2025-06-27 | LONG_PUT | Strike: $150.00 | Premium: $0.43 | Shares: 18
+INFO:backtest_engine:Exit Stop Loss (-52.2%): 2025-07-01 | PnL: $-529.59 (-68.1%)
+INFO:backtest_engine:Entry: 2025-07-02 | LONG_PUT | Strike: $150.00 | Premium: $0.44 | Shares: 17
+INFO:backtest_engine:Exit Stop Loss (-72.1%): 2025-07-07 | PnL: $-639.33 (-86.0%)
+INFO:backtest_engine:Entry: 2025-07-08 | LONG_PUT | Strike: $150.00 | Premium: $0.41 | Shares: 16
+INFO:backtest_engine:Exit Stop Loss (-87.0%): 2025-07-14 | PnL: $-655.53 (-100.0%)
+INFO:backtest_engine:Entry: 2025-07-15 | LONG_CALL | Strike: $180.00 | Premium: $0.45 | Shares: 13
+INFO:backtest_engine:Exit Stop Loss (-85.4%): 2025-07-21 | PnL: $-591.48 (-100.0%)
+INFO:backtest_engine:Entry: 2025-07-21 | LONG_CALL | Strike: $180.00 | Premium: $0.47 | Shares: 12
+INFO:backtest_engine:Exit Stop Loss (-53.7%): 2025-07-25 | PnL: $-387.11 (-69.2%)
+INFO:backtest_engine:Entry: 2025-07-25 | LONG_PUT | Strike: $160.00 | Premium: $0.31 | Shares: 17
+INFO:backtest_engine:Exit Stop Loss (-66.2%): 2025-07-30 | PnL: $-437.98 (-83.1%)
+INFO:backtest_engine:Entry: 2025-07-30 | LONG_PUT | Strike: $160.00 | Premium: $0.37 | Shares: 13
+INFO:backtest_engine:Exit Stop Loss (-71.8%): 2025-08-04 | PnL: $-409.42 (-85.9%)
+INFO:backtest_engine:Entry: 2025-08-08 | LONG_PUT | Strike: $170.00 | Premium: $0.40 | Shares: 11
+INFO:backtest_engine:Exit Stop Loss (-52.0%): 2025-08-12 | PnL: $-299.33 (-68.0%)
+INFO:backtest_engine:Entry: 2025-08-12 | LONG_PUT | Strike: $170.00 | Premium: $0.45 | Shares: 9
+INFO:backtest_engine:Exit Stop Loss (-85.4%): 2025-08-18 | PnL: $-402.83 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-22 | LONG_CALL | Strike: $190.00 | Premium: $0.54 | Shares: 6
+INFO:backtest_engine:Exit Stop Loss (-53.5%): 2025-09-25 | PnL: $-210.90 (-65.1%)
+INFO:backtest_engine:Entry: 2025-09-30 | LONG_PUT | Strike: $180.00 | Premium: $0.55 | Shares: 6
+INFO:backtest_engine:Exit Stop Loss (-85.4%): 2025-10-06 | PnL: $-328.48 (-100.0%)
+INFO:backtest_engine:Entry: 2025-10-08 | LONG_CALL | Strike: $200.00 | Premium: $0.50 | Shares: 6
+INFO:backtest_engine:Exit Stop Loss (-72.2%): 2025-10-13 | PnL: $-256.34 (-86.1%)
+INFO:backtest_engine:Entry: 2025-10-28 | LONG_CALL | Strike: $210.00 | Premium: $0.56 | Shares: 5
+INFO:backtest_engine:Exit Stop Loss (-83.0%): 2025-11-03 | PnL: $-281.45 (-100.0%)
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: PLTR from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-06-12 | LONG_CALL | Strike: $140.00 | Premium: $0.40 | Shares: 25
+INFO:backtest_engine:Exit Stop Loss (-67.3%): 2025-06-17 | PnL: $-828.27 (-83.7%)
+INFO:backtest_engine:Entry: 2025-06-17 | LONG_CALL | Strike: $150.00 | Premium: $0.32 | Shares: 29
+INFO:backtest_engine:Exit Stop Loss (-84.2%): 2025-06-23 | PnL: $-915.31 (-100.0%)
+INFO:backtest_engine:Entry: 2025-06-25 | LONG_CALL | Strike: $150.00 | Premium: $0.39 | Shares: 21
+INFO:backtest_engine:Exit Stop Loss (-59.9%): 2025-06-27 | PnL: $-556.39 (-67.9%)
+INFO:backtest_engine:Entry: 2025-07-14 | LONG_CALL | Strike: $160.00 | Premium: $0.36 | Shares: 21
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-07-21 | PnL: $-761.98 (-100.0%)
+INFO:backtest_engine:Entry: 2025-07-21 | LONG_CALL | Strike: $160.00 | Premium: $0.41 | Shares: 17
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-07-28 | PnL: $-689.14 (-100.0%)
+INFO:backtest_engine:Entry: 2025-08-05 | LONG_CALL | Strike: $180.00 | Premium: $0.50 | Shares: 12
+INFO:backtest_engine:Exit Profit Target (1355.8%): 2025-08-08 | PnL: $8032.09 (1340.3%)
+INFO:backtest_engine:Entry: 2025-08-08 | LONG_CALL | Strike: $200.00 | Premium: $0.93 | Shares: 15
+INFO:backtest_engine:Exit Stop Loss (-75.5%): 2025-08-11 | PnL: $-1139.14 (-81.7%)
+INFO:backtest_engine:Entry: 2025-08-11 | LONG_CALL | Strike: $190.00 | Premium: $0.52 | Shares: 25
+INFO:backtest_engine:Exit Stop Loss (-64.6%): 2025-08-15 | PnL: $-999.87 (-76.4%)
+INFO:backtest_engine:Entry: 2025-09-15 | LONG_CALL | Strike: $180.00 | Premium: $0.46 | Shares: 26
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-09-22 | PnL: $-1205.27 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-22 | LONG_CALL | Strike: $190.00 | Premium: $0.47 | Shares: 23
+INFO:backtest_engine:Exit Stop Loss (-59.7%): 2025-09-26 | PnL: $-784.33 (-73.2%)
+INFO:backtest_engine:Entry: 2025-10-22 | LONG_PUT | Strike: $160.00 | Premium: $0.40 | Shares: 25
+INFO:backtest_engine:Exit Stop Loss (-77.9%): 2025-10-27 | PnL: $-862.62 (-87.3%)
+INFO:backtest_engine:Entry: 2025-10-27 | LONG_CALL | Strike: $200.00 | Premium: $0.50 | Shares: 18
+INFO:backtest_engine:Exit Profit Target (1343.4%): 2025-11-03 | PnL: $12028.59 (1343.4%)
+INFO:backtest_engine:Entry: 2025-11-03 | LONG_CALL | Strike: $220.00 | Premium: $0.53 | Shares: 40
+INFO:backtest_engine:Exit Stop Loss (-50.1%): 2025-11-04 | PnL: $-1242.88 (-58.4%)
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: PLTR from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-06-27 | LONG_PUT | Strike: $120.00 | Premium: $0.30 | Shares: 32
+INFO:backtest_engine:Exit Stop Loss (-50.6%): 2025-06-30 | PnL: $-611.44 (-63.0%)
+INFO:backtest_engine:Entry: 2025-07-25 | LONG_CALL | Strike: $170.00 | Premium: $0.66 | Shares: 14
+INFO:backtest_engine:Exit Stop Loss (-67.4%): 2025-07-28 | PnL: $-698.14 (-75.6%)
+INFO:backtest_engine:Entry: 2025-07-28 | LONG_CALL | Strike: $170.00 | Premium: $0.38 | Shares: 23
+INFO:backtest_engine:Exit Stop Loss (-63.1%): 2025-08-01 | PnL: $-652.71 (-75.4%)
+INFO:backtest_engine:Entry: 2025-08-07 | LONG_CALL | Strike: $190.00 | Premium: $0.51 | Shares: 15
+INFO:backtest_engine:Exit Stop Loss (-56.4%): 2025-08-11 | PnL: $-547.96 (-71.0%)
+INFO:backtest_engine:Entry: 2025-08-11 | LONG_CALL | Strike: $190.00 | Premium: $0.52 | Shares: 14
+INFO:backtest_engine:Exit Stop Loss (-64.6%): 2025-08-15 | PnL: $-559.92 (-76.4%)
+INFO:backtest_engine:Entry: 2025-08-15 | LONG_CALL | Strike: $190.00 | Premium: $0.70 | Shares: 9
+INFO:backtest_engine:Exit Stop Loss (-68.6%): 2025-08-18 | PnL: $-481.51 (-76.4%)
+INFO:backtest_engine:Entry: 2025-08-18 | LONG_PUT | Strike: $170.00 | Premium: $0.54 | Shares: 11
+INFO:backtest_engine:Exit Profit Target (2217.2%): 2025-08-19 | PnL: $13172.46 (2207.3%)
+INFO:backtest_engine:Entry: 2025-08-19 | LONG_PUT | Strike: $150.00 | Premium: $0.43 | Shares: 45
+INFO:backtest_engine:Exit Stop Loss (-85.5%): 2025-08-25 | PnL: $-1943.43 (-100.0%)
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: PLTR from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-08-06 | LONG_CALL | Strike: $190.00 | Premium: $0.47 | Shares: 21
+INFO:backtest_engine:Exit Stop Loss (-68.2%): 2025-08-11 | PnL: $-829.15 (-84.1%)
+INFO:backtest_engine:Entry: 2025-08-11 | LONG_CALL | Strike: $190.00 | Premium: $0.52 | Shares: 17
+INFO:backtest_engine:Exit Stop Loss (-64.6%): 2025-08-15 | PnL: $-679.91 (-76.4%)
+INFO:backtest_engine:Entry: 2025-08-15 | LONG_CALL | Strike: $190.00 | Premium: $0.70 | Shares: 12
+INFO:backtest_engine:Exit Stop Loss (-68.6%): 2025-08-18 | PnL: $-642.02 (-76.4%)
+INFO:backtest_engine:Entry: 2025-08-18 | LONG_PUT | Strike: $170.00 | Premium: $0.54 | Shares: 14
+INFO:backtest_engine:Exit Profit Target (2217.2%): 2025-08-19 | PnL: $16764.95 (2207.3%)
+INFO:backtest_engine:Entry: 2025-08-19 | LONG_PUT | Strike: $150.00 | Premium: $0.43 | Shares: 56
+INFO:backtest_engine:Exit Stop Loss (-85.5%): 2025-08-25 | PnL: $-2418.49 (-100.0%)
+INFO:backtest_engine:Entry: 2025-08-25 | LONG_PUT | Strike: $150.00 | Premium: $0.44 | Shares: 50
+INFO:backtest_engine:Exit Stop Loss (-56.7%): 2025-08-29 | PnL: $-1556.97 (-71.1%)
+INFO:backtest_engine:Entry: 2025-08-29 | LONG_CALL | Strike: $160.00 | Premium: $2.25 | Shares: 9
+INFO:backtest_engine:Exit Stop Loss (-90.5%): 2025-09-02 | PnL: $-1896.13 (-93.6%)
+INFO:backtest_engine:Entry: 2025-09-02 | LONG_CALL | Strike: $160.00 | Premium: $0.50 | Shares: 37
+INFO:backtest_engine:Exit Stop Loss (-51.2%): 2025-09-05 | PnL: $-1175.81 (-63.4%)
+INFO:backtest_engine:Entry: 2025-09-05 | LONG_PUT | Strike: $150.00 | Premium: $2.51 | Shares: 6
+INFO:backtest_engine:Exit Stop Loss (-89.8%): 2025-09-08 | PnL: $-1390.44 (-92.3%)
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: META from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-06-24 | LONG_PUT | Strike: $680.00 | Premium: $1.99 | Shares: 5
+INFO:backtest_engine:Exit Stop Loss (-87.5%): 2025-06-30 | PnL: $-994.18 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-09 | LONG_PUT | Strike: $700.00 | Premium: $1.75 | Shares: 5
+INFO:backtest_engine:Exit Stop Loss (-85.6%): 2025-09-15 | PnL: $-872.52 (-100.0%)
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: META from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-07-11 | LONG_CALL | Strike: $750.00 | Premium: $1.29 | Shares: 7
+INFO:backtest_engine:Exit Stop Loss (-61.0%): 2025-07-16 | PnL: $-727.01 (-80.5%)
+INFO:backtest_engine:Entry: 2025-07-18 | LONG_CALL | Strike: $740.00 | Premium: $2.19 | Shares: 4
+INFO:backtest_engine:Exit Stop Loss (-59.3%): 2025-07-23 | PnL: $-637.25 (-72.9%)
+INFO:backtest_engine:Entry: 2025-07-23 | LONG_PUT | Strike: $680.00 | Premium: $3.95 | Shares: 2
+INFO:backtest_engine:Exit Stop Loss (-67.9%): 2025-07-31 | PnL: $-578.18 (-73.2%)
+INFO:backtest_engine:Entry: 2025-07-31 | LONG_CALL | Strike: $810.00 | Premium: $2.14 | Shares: 3
+INFO:backtest_engine:Exit Stop Loss (-56.1%): 2025-08-04 | PnL: $-453.61 (-70.7%)
+INFO:backtest_engine:Entry: 2025-08-18 | LONG_CALL | Strike: $810.00 | Premium: $2.03 | Shares: 3
+INFO:backtest_engine:Exit Stop Loss (-55.0%): 2025-08-21 | PnL: $-404.45 (-66.3%)
+INFO:backtest_engine:Entry: 2025-08-22 | LONG_PUT | Strike: $720.00 | Premium: $1.43 | Shares: 5
+INFO:backtest_engine:Exit Stop Loss (-56.5%): 2025-08-27 | PnL: $-559.43 (-78.2%)
+INFO:backtest_engine:Entry: 2025-08-27 | LONG_PUT | Strike: $690.00 | Premium: $2.04 | Shares: 3
+INFO:backtest_engine:Exit Stop Loss (-73.4%): 2025-09-02 | PnL: $-529.82 (-86.7%)
+INFO:backtest_engine:Entry: 2025-09-03 | LONG_CALL | Strike: $800.00 | Premium: $1.68 | Shares: 3
+INFO:backtest_engine:Exit Stop Loss (-67.4%): 2025-09-08 | PnL: $-422.74 (-83.7%)
+INFO:backtest_engine:Entry: 2025-09-08 | LONG_PUT | Strike: $690.00 | Premium: $1.74 | Shares: 3
+INFO:backtest_engine:Exit Stop Loss (-57.8%): 2025-09-12 | PnL: $-375.24 (-71.9%)
+INFO:backtest_engine:Entry: 2025-09-25 | LONG_PUT | Strike: $690.00 | Premium: $2.27 | Shares: 2
+INFO:backtest_engine:Exit Stop Loss (-52.3%): 2025-09-30 | PnL: $-291.98 (-64.2%)
+INFO:backtest_engine:Entry: 2025-10-02 | LONG_PUT | Strike: $690.00 | Premium: $1.97 | Shares: 2
+INFO:backtest_engine:Exit Stop Loss (-54.5%): 2025-10-06 | PnL: $-274.82 (-69.7%)
+INFO:backtest_engine:Entry: 2025-10-06 | LONG_PUT | Strike: $680.00 | Premium: $1.95 | Shares: 2
+INFO:backtest_engine:Exit Stop Loss (-54.7%): 2025-10-10 | PnL: $-272.59 (-69.8%)
+INFO:backtest_engine:Entry: 2025-10-13 | LONG_PUT | Strike: $680.00 | Premium: $1.95 | Shares: 2
+INFO:backtest_engine:Exit Stop Loss (-57.4%): 2025-10-17 | PnL: $-279.57 (-71.6%)
+INFO:backtest_engine:Entry: 2025-10-30 | LONG_PUT | Strike: $630.00 | Premium: $1.77 | Shares: 2
+INFO:backtest_engine:Exit Stop Loss (-82.9%): 2025-11-05 | PnL: $-354.86 (-100.0%)
+INFO:backtest_engine:Entry: 2025-11-05 | LONG_PUT | Strike: $600.00 | Premium: $1.68 | Shares: 2
+INFO:backtest_engine:Exit Stop Loss (-70.7%): 2025-11-10 | PnL: $-286.42 (-85.4%)
+INFO:backtest_engine:Entry: 2025-11-10 | LONG_CALL | Strike: $660.00 | Premium: $1.77 | Shares: 2
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: TSLA from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-09-12 | LONG_CALL | Strike: $420.00 | Premium: $4.65 | Shares: 2
+INFO:backtest_engine:Exit Stop Loss (-84.4%): 2025-09-15 | PnL: $-821.06 (-88.3%)
+INFO:backtest_engine:Entry: 2025-09-15 | LONG_CALL | Strike: $430.00 | Premium: $1.13 | Shares: 8
+INFO:backtest_engine:Exit Expiry: 2025-09-22 | PnL: $2467.92 (274.2%)
+INFO:backtest_engine:Entry: 2025-09-22 | LONG_CALL | Strike: $470.00 | Premium: $1.01 | Shares: 11
+INFO:backtest_engine:Exit Stop Loss (-51.5%): 2025-09-25 | PnL: $-704.19 (-63.6%)
+INFO:backtest_engine:Entry: 2025-09-25 | LONG_CALL | Strike: $440.00 | Premium: $1.22 | Shares: 8
+INFO:backtest_engine:Exit Profit Target (1513.1%): 2025-10-01 | PnL: $14593.66 (1497.8%)
+INFO:backtest_engine:Entry: 2025-10-01 | LONG_CALL | Strike: $480.00 | Premium: $1.29 | Shares: 19
+INFO:backtest_engine:Exit Stop Loss (-53.4%): 2025-10-03 | PnL: $-1532.18 (-62.7%)
+INFO:backtest_engine:Entry: 2025-10-03 | LONG_CALL | Strike: $450.00 | Premium: $5.75 | Shares: 4
+INFO:backtest_engine:Exit Stop Loss (-90.7%): 2025-10-07 | PnL: $-2157.49 (-93.8%)
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: BABA from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-07-24 | LONG_CALL | Strike: $130.00 | Premium: $0.29 | Shares: 33
+INFO:backtest_engine:Exit Stop Loss (-54.8%): 2025-07-28 | PnL: $-678.82 (-69.9%)
+INFO:backtest_engine:Entry: 2025-07-28 | LONG_CALL | Strike: $130.00 | Premium: $0.31 | Shares: 30
+INFO:backtest_engine:Exit Stop Loss (-67.4%): 2025-08-01 | PnL: $-727.93 (-78.3%)
+INFO:backtest_engine:Entry: 2025-08-01 | LONG_CALL | Strike: $120.00 | Premium: $1.22 | Shares: 7
+INFO:backtest_engine:Exit Stop Loss (-82.7%): 2025-08-04 | PnL: $-743.08 (-87.0%)
+INFO:backtest_engine:Entry: 2025-08-04 | LONG_CALL | Strike: $120.00 | Premium: $0.37 | Shares: 21
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-08-11 | PnL: $-776.47 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-02 | LONG_CALL | Strike: $150.00 | Premium: $0.32 | Shares: 22
+INFO:backtest_engine:Exit Stop Loss (-50.8%): 2025-09-04 | PnL: $-427.77 (-60.6%)
+INFO:backtest_engine:Entry: 2025-09-04 | LONG_CALL | Strike: $140.00 | Premium: $0.32 | Shares: 20
+INFO:backtest_engine:Exit Profit Target (2127.4%): 2025-09-09 | PnL: $13667.67 (2109.6%)
+INFO:backtest_engine:Entry: 2025-09-09 | LONG_CALL | Strike: $150.00 | Premium: $0.47 | Shares: 43
+INFO:backtest_engine:Exit Profit Target (1136.0%): 2025-09-11 | PnL: $22508.15 (1122.0%)
+INFO:backtest_engine:Entry: 2025-09-11 | LONG_CALL | Strike: $160.00 | Premium: $0.47 | Shares: 91
+INFO:backtest_engine:Exit Stop Loss (-52.6%): 2025-09-15 | PnL: $-2923.64 (-68.4%)
+INFO:backtest_engine:Entry: 2025-09-15 | LONG_CALL | Strike: $170.00 | Premium: $0.38 | Shares: 105
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-09-22 | PnL: $-3978.27 (-100.0%)
+INFO:backtest_engine:Entry: 2025-09-22 | LONG_CALL | Strike: $170.00 | Premium: $0.48 | Shares: 74
+INFO:backtest_engine:Exit Profit Target (1310.7%): 2025-09-24 | PnL: $46260.73 (1295.5%)
+INFO:backtest_engine:Entry: 2025-09-24 | LONG_CALL | Strike: $190.00 | Premium: $0.42 | Shares: 195
+INFO:backtest_engine:Exit Stop Loss (-67.7%): 2025-09-29 | PnL: $-6875.30 (-83.8%)
+INFO:backtest_engine:Entry: 2025-09-29 | LONG_CALL | Strike: $190.00 | Premium: $0.48 | Shares: 158
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-10-06 | PnL: $-7513.54 (-100.0%)
+INFO:backtest_engine:Backtest initialized with $10,000
+INFO:backtest_engine:Real option prices: ✅ Enabled
+INFO:backtest_engine:Running backtest: NVDA from 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Strategy: auto, Position size: 10.0%
+INFO:backtest_engine:📊 Fetched data: 2025-04-01 to 2025-11-11 (156 days)
+INFO:backtest_engine:   Requested: 2025-04-01 to 2025-11-11
+INFO:backtest_engine:Entry: 2025-06-12 | LONG_CALL | Strike: $150.00 | Premium: $0.43 | Shares: 23
+INFO:backtest_engine:Exit Stop Loss (-57.7%): 2025-06-16 | PnL: $-705.40 (-71.8%)
+INFO:backtest_engine:Entry: 2025-06-16 | LONG_CALL | Strike: $150.00 | Premium: $0.42 | Shares: 22
+INFO:backtest_engine:Exit Stop Loss (-58.7%): 2025-06-20 | PnL: $-671.78 (-72.4%)
+INFO:backtest_engine:Entry: 2025-06-20 | LONG_CALL | Strike: $150.00 | Premium: $0.38 | Shares: 22
+INFO:backtest_engine:Exit Profit Target (1069.5%): 2025-06-25 | PnL: $8793.62 (1051.9%)
+INFO:backtest_engine:Entry: 2025-06-25 | LONG_PUT | Strike: $150.00 | Premium: $0.47 | Shares: 37
+INFO:backtest_engine:Exit Stop Loss (-73.9%): 2025-06-30 | PnL: $-1510.87 (-86.9%)
+INFO:backtest_engine:Entry: 2025-06-30 | LONG_CALL | Strike: $170.00 | Premium: $0.38 | Shares: 42
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-07-07 | PnL: $-1588.10 (-100.0%)
+INFO:backtest_engine:Entry: 2025-07-07 | LONG_CALL | Strike: $170.00 | Premium: $0.38 | Shares: 37
+INFO:backtest_engine:Exit Stop Loss (-100.0%): 2025-07-14 | PnL: $-1413.21 (-100.0%)
+
+[2025-11-12 20:00:41] 🔄 Starting real-time update...
+🔍 Evaluating strategies based on real-time performance (from backtest end date to previous trading day)...
+📅 Using previous trading day as end date: 2025-11-11
+
+  📊 Evaluating 9 strategies for BABA...
+    🔄 Testing 'CCI_Momentum_MACD_Enhanced' from 2025-10-01 to 2025-11-11 (previous trading day)...
+      → Actual return: +0.00% (from 2025-10-01 to 2025-11-11)
+    🔄 Testing 'MACD_RSI_BB' from 2025-05-01 to 2025-11-11 (previous trading day)...
+      → Actual return: +878.45% (from 2025-05-01 to 2025-11-11)
+    🔄 Testing 'MACD_RSI_BB' from 2025-04-01 to 2025-11-11 (previous trading day)...
+      → Actual return: +577.92% (from 2025-04-01 to 2025-11-11)
+    🔄 Testing 'MACD_Volume_Reversal' from 2025-09-30 to 2025-11-11 (previous trading day)...
+      → Actual return: +0.00% (from 2025-09-30 to 2025-11-11)
+    🔄 Testing 'WILL_BBCO_VOLU_Plus1' from 2025-04-01 to 2025-11-11 (previous trading day)...
+      → Actual return: +372.64% (from 2025-04-01 to 2025-11-11)
+    🔄 Testing 'Enhanced_MACD_RSI_BB' from 2025-04-01 to 2025-11-11 (previous trading day)...
+      → Actual return: +67.76% (from 2025-04-01 to 2025-11-11)
+    🔄 Testing 'CCI_Volume_LowVol_Fusion' from 2025-05-01 to 2025-11-11 (previous trading day)...
+      → Actual return: +21.43% (from 2025-05-01 to 2025-11-11)
+    🔄 Testing 'BB_Specialist' from 2025-04-01 to 2025-11-11 (previous trading day)...
+      → Actual return: +577.92% (from 2025-04-01 to 2025-11-11)
+    🔄 Testing 'MACD_RSI_BB' from 2025-04-01 to 2025-11-11 (previous trading day)...
+      → Actual return: +577.92% (from 2025-04-01 to 2025-11-11)
+  ✅ BABA: Selected 'MACD_RSI_BB' (actual return: +878.45%)
+
+  📊 Evaluating 3 strategies for NVDA...
+    🔄 Testing 'CCI_RSI_Volatility_Momentum' from 2025-04-01 to 2025-11-11 (previous trading day)...
+      → Actual return: -54.82% (from 2025-04-01 to 2025-11-11)
+    🔄 Testing 'LowVol_BB_Breakout_Momentum_Reversal' from 2025-05-01 to 2025-11-11 (previous trading day)...
+      → Actual return: +0.00% (from 2025-05-01 to 2025-11-11)
+    🔄 Testing 'MACR_CCIE_WILL' from 2025-04-01 to 2025-11-11 (previous trading day)...
+      → Actual return: -73.18% (from 2025-04-01 to 2025-11-11)
+  ✅ NVDA: Selected 'LowVol_BB_Breakout_Momentum_Reversal' (actual return: +0.00%)
+
+  📊 Evaluating 3 strategies for PLTR...
+    🔄 Testing 'CCIE_WILL_RSIO_Plus2' from 2025-04-01 to 2025-11-11 (previous trading day)...
+      → Actual return: +100.75% (from 2025-04-01 to 2025-11-11)
+    🔄 Testing 'BBCOMP_VOLU_LOWV_MA50_Plus6' from 2025-04-01 to 2025-11-11 (previous trading day)...
+      → Actual return: +76.77% (from 2025-04-01 to 2025-11-11)
+    🔄 Testing 'MACD_RSI_BB' from 2025-04-01 to 2025-11-11 (previous trading day)...
+      → Actual return: +61.76% (from 2025-04-01 to 2025-11-11)
+  ✅ PLTR: Selected 'CCIE_WILL_RSIO_Plus2' (actual return: +100.75%)
+
+  📊 Evaluating 2 strategies for META...
+    🔄 Testing 'MACR_WILL' from 2025-04-01 to 2025-11-11 (previous trading day)...
+      → Actual return: -18.67% (from 2025-04-01 to 2025-11-11)
+    🔄 Testing 'MACD_Volume_RSI_Plus1' from 2025-04-01 to 2025-11-11 (previous trading day)...
+      → Actual return: -65.60% (from 2025-04-01 to 2025-11-11)
+  ✅ META: Selected 'MACR_WILL' (actual return: -18.67%)
+
+  📊 Evaluating 1 strategies for TSLA...
+    🔄 Testing 'BBCO_MACR_RSIO_Plus1' from 2025-04-01 to 2025-11-11 (previous trading day)...
+      → Actual return: +118.47% (from 2025-04-01 to 2025-11-11)
+  ✅ TSLA: Selected 'BBCO_MACR_RSIO_Plus1' (actual return: +118.47%)
+
+📊 Updating 5 symbols: ['BABA', 'NVDA', 'PLTR', 'META', 'TSLA']
+💾 Saved strategy performance evaluation to strategy_performance_cache.json
+  📈 Processing BABA...
+  ⏭️  BABA: Already up to date (last update: 2025-11-12, previous trading day: 2025-11-11)
+  📊 Data is up to date, running full backtest to get all trades...
+  ⚠️  Note: Will NOT update cache equity_curve (using cached data to preserve latest values)
+  ✅ BABA: Using full backtest results (Return=+577.92%, Final Value=$67,791.74)
+     Note: Using backtest equity_curve for consistency with strategy selection
+  ✅ BABA: Got 12 trades from full backtest
+  ✅ BABA: Using cached data (Return=+577.92%, Final Value=$67,791.74)
+  📈 Processing NVDA...
+  ⏭️  NVDA: Already up to date (last update: 2025-11-12, previous trading day: 2025-11-11)
+  📊 Data is up to date, running full backtest to get all trades...
+  ⚠️  Note: Will NOT update cache equity_curve (using cached data to preserve latest values)
+  ✅ NVDA: Using full backtest results (Return=+29.04%, Final Value=$12,904.26)
+     Note: Using backtest equity_curve for consistency with strategy selection
+  ✅ NVDA: Got 6 trades from full backtest
+  ✅ NVDA: Using cached data (Return=+29.04%, Final Value=$12,904.26)
+  📈 Processing PLTR...
+  ⏭️  PLTR: Already up to date (last update: 2025-11-12, previous trading day: 2025-11-11)
+  ✅ Using strategy evaluation result (from 2025-04-01 to 2025-11-11)
+     This ensures consistency with strategy selection (+100.75%)
+  ✅ PLTR: Using full backtest results (Return=+100.75%, Final Value=$20,075.48)
+     Note: Using backtest equity_curve for consistency with strategy selection
+  ✅ PLTR: Got 13 trades from full backtest
+  ✅ PLTR: Using cached data (Return=+100.75%, Final Value=$20,075.48)
+  📈 Processing META...
+  ⏭️  META: Already up to date (last update: 2025-11-12, previous trading day: 2025-11-11)
+  📅 Padding 2025-11-11 with previous value: $7428.33
+  ✅ Using strategy evaluation result (from 2025-04-01 to 2025-11-11)
+     This ensures consistency with strategy selection (-18.67%)
+  ✅ META: Using full backtest results (Return=-18.67%, Final Value=$8,133.30)
+     Note: Using backtest equity_curve for consistency with strategy selection
+  ✅ META: Got 2 trades from full backtest
+  ✅ META: Using cached data (Return=-18.67%, Final Value=$8,133.30)
+  📈 Processing TSLA...
+  ⏭️  TSLA: Already up to date (last update: 2025-11-12, previous trading day: 2025-11-11)
+  ✅ Using strategy evaluation result (from 2025-04-01 to 2025-11-11)
+     This ensures consistency with strategy selection (+118.47%)
+  ✅ TSLA: Using full backtest results (Return=+118.47%, Final Value=$21,846.67)
+     Note: Using backtest equity_curve for consistency with strategy selection
+  ✅ TSLA: Got 6 trades from full backtest
+  ✅ TSLA: Using cached data (Return=+118.47%, Final Value=$21,846.67)
+✅ Updated 5 symbols, saved to monitor_results.json

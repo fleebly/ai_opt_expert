@@ -1,8 +1,8 @@
 {
-  "name": "BB_Specialist",
+  "name": "WILL_BBCO_VOLU_Plus1",
   "signal_weights": {
-    "bb_compression": 0.5,
-    "bb_breakout": 0.3,
+    "williams_oversold": 0.45,
+    "bb_compression": 0.35,
     "volume_surge": 0.2
   },
   "params": {
@@ -23,7 +23,7 @@
   "metadata": {
     "symbol": "BABA",
     "best_return": 28.72368184859507,
-    "generated_at": "2025-11-11 21:12:57",
+    "generated_at": "2025-11-11 10:55:01",
     "backtest_period": "2024-01-01 to 2025-04-01",
     "evaluation_period": "2025-04-01 to 2025-11-01"
   }

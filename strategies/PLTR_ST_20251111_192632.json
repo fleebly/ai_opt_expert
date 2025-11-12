@@ -1,0 +1,31 @@
+{
+  "name": "BBCOMP_VOLU_LOWV_MA50_Plus6",
+  "signal_weights": {
+    "bb_compression": 0.3,
+    "volume_surge": 0.3,
+    "low_volatility": 0.2,
+    "price_above_ma50": 0.2
+  },
+  "params": {
+    "profit_target": 5.0,
+    "stop_loss": -0.5,
+    "max_holding_days": 30,
+    "position_size": 0.1
+  },
+  "backtest_performance": {
+    "total_return": 70.92636551952702,
+    "win_rate": 0.5555555555555556,
+    "sharpe_ratio": 2.723247748788839,
+    "max_drawdown": -0.30272167133646594,
+    "num_trades": 18,
+    "avg_win": 74217.98621225418,
+    "avg_loss": -4114.525865908949
+  },
+  "metadata": {
+    "symbol": "PLTR",
+    "best_return": 70.92636551952702,
+    "generated_at": "2025-11-11 19:26:32",
+    "backtest_period": "2024-01-01 to 2025-04-01",
+    "evaluation_period": "2025-04-01 to 2025-11-01"
+  }
+}
